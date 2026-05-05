@@ -454,7 +454,7 @@ const DEFAULT = {
     { id:'bolos', title:'Rocambole', badge:'', shortDesc:'Doce, macio e irresistível', description:'Rocambole delicioso e macio, recheado com sabores gourmet!', cardImage:'https://i.imgur.com/upiuoy2m.png', images:['https://i.imgur.com/3DHYo7Q.jpeg','https://i.imgur.com/tBAfCzp.jpeg','https://i.imgur.com/hmLo7K6.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Doce de Leite Gourmet',price:'R$ 60,00'},{flavor:'Ninho Gourmet',price:'R$ 60,00'},{flavor:'Brigadeiro de Chocolate Gourmet',price:'R$ 60,00'},{flavor:'Beijinho Gourmet',price:'R$ 60,00'}], observations:'Pedido mínimo: 24h de antecedência.' },
     { id:'brigadeiros', title:'Brownie', badge:'', shortDesc:'Sabores exclusivos e tradicionais', description:'Brownies deliciosos com chocolate belga e sabores exclusivos.', cardImage:'https://i.imgur.com/C0x8ygIm.png', images:['https://i.imgur.com/KvXeI1D.jpeg','https://i.imgur.com/XcukGOY.jpeg'], pricesLabel:'Preços e Recheios', prices:[{flavor:'Brigadeiro gourmet',price:'R$ 6,00/unid'},{flavor:'Doce de Leite gourmet',price:'R$ 6,00/unid'},{flavor:'Ninho gourmet',price:'R$ 6,00/unid'}], observations:'Realizar pedidos de no mínimo 5 unidades.' },
     { id:'palhaitaliana', title:'Palha Italiana', badge:'', shortDesc:'Irresistível e deliciosa', description:'Palha Italiana irresistível e deliciosa, com recheios maravilhosos.', cardImage:'https://i.imgur.com/1qsbV8Nm.png', images:['https://i.imgur.com/KGE6F4j.jpeg','https://i.imgur.com/fUCRZP9.jpeg','https://i.imgur.com/5y0UeOo.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Ninho com Brigadeiro',price:'R$ 7,00/unid'},{flavor:'Ninho com Morango',price:'R$ 7,00/unid'},{flavor:'Ninho com Nutella',price:'R$ 10,00/unid'}], observations:'Mínimo de 5 unidades.' },
-    { id:'tortas', title:'Tortas', badge:'', shortDesc:'Deliciosas e personalizadas', description:'Tortas deliciosas com combinações perfeitas de sabores!', cardImage:'https://i.imgur.com/ueszqbkm.png', images:['https://i.imgur.com/5RithSH.jpeg','https://i.imgur.com/ht4QRky.jpeg','https://i.imgur.com/p8SVwdn.jpeg','https://i.imgur.com/8pRb80Q.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Bannofe',price:'R$ 40,00 / R$ 90,00'},{flavor:'Morangoffe',price:'R$ 50,00 / R$ 100,00'},{flavor:'Torta de Limão',price:'R$ 40,00 / R$ 90,00'},{flavor:'Torta Salgada (1kg)',price:'R$ 45,00'}], observations:'Pedido mínimo: 24h de antecedência.' },
+    { id:'tortas', title:'Tortas', badge:'', shortDesc:'Deliciosas e personalizadas', description:'Tortas deliciosas com combinações perfeitas de sabores!', cardImage:'https://i.imgur.com/ueszqbkm.png', images:['https://i.imgur.com/5RithSH.jpeg','https://i.imgur.com/ht4QRky.jpeg','https://i.imgur.com/p8SVwdn.jpeg','https://i.imgur.com/8pRb80Q.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Bannofe',description:'Farofa de biscoito, doce de leite gourmet, chantninho e banana.',variants:[{name:'Travessa pequena',price:'R$ 40,00'},{name:'Travessa grande',price:'R$ 90,00'}]},{flavor:'Morangoffe',description:'Farofa de biscoito, creme de ninho, chantininho e morangos.',variants:[{name:'Travessa pequena',price:'R$ 50,00'},{name:'Travessa grande',price:'R$ 100,00'}]},{flavor:'Torta de Limão',description:'Farofa de biscoito, mousse de limão, chantininho e raspas de limão.',variants:[{name:'Travessa pequena',price:'R$ 40,00'},{name:'Travessa grande',price:'R$ 90,00'}]}], observations:'Pedido mínimo: 24h de antecedência.' },
     { id:'minibolos', title:'Pavês', badge:'', shortDesc:'Deliciosos e irresistíveis', description:'Pavês deliciosos com combinações irresistíveis de sabores!', cardImage:'https://i.imgur.com/PbSOqNnm.png', images:['https://i.imgur.com/gFys2Mf.jpeg','https://i.imgur.com/UOl5OpH.jpeg','https://i.imgur.com/UDDC6Fv.jpeg','https://i.imgur.com/0UPtbAD.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Pavê trufado – Pequena',price:'R$ 25,00'},{flavor:'Pavê trufado – Média',price:'R$ 50,00'},{flavor:'Pavê trufado – Grande',price:'R$ 70,00'},{flavor:'Pavê de bombom – Pequena',price:'R$ 30,00'},{flavor:'Pavê de bombom – Média',price:'R$ 60,00'},{flavor:'Pavê de bombom – Grande',price:'R$ 80,00'}], observations:'Pedido mínimo: 24h de antecedência.' }
   ]
 };
@@ -668,8 +668,18 @@ function renderEditForm(p) {
     <div class="field"><label>Rótulo da seção de preços</label><input type="text" id="ef_pricesLabel" value="${esc(p.pricesLabel||'Preços e Sabores')}"></div>
     <div class="field">
       <label>Sabores / Preços</label>
+      <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.6rem;">Para cada sabor, você pode adicionar um preço simples <b>ou</b> variantes (ex: Travessa pequena / grande).</p>
       <div id="ef_pricesContainer"></div>
-      <div class="add-btn-row"><button class="btn btn-secondary btn-sm" onclick="addPriceRow()"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar</button></div>
+      <div class="add-btn-row" style="gap:.5rem;">
+        <button class="btn btn-secondary btn-sm" onclick="addPriceRow('simple')">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          + Sabor simples
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="addPriceRow('variant')">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          + Sabor com tamanhos
+        </button>
+      </div>
     </div>
     <div class="field">
       <label>Massas disponíveis <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
@@ -740,11 +750,49 @@ window.handleCardImgUpload = async function(e) {
     if (label) label.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><strong>Upload da foto</strong><span>Clique para selecionar</span>';
   }
 };
-window.addPriceRow = function() { editPrices.push({flavor:'',price:''}); renderPriceRows(); };
+window.addPriceRow = function(type) {
+  if (type === 'variant') {
+    editPrices.push({ flavor:'', description:'', variants:[{name:'Travessa pequena',price:''},{name:'Travessa grande',price:''}] });
+  } else {
+    editPrices.push({ flavor:'', price:'' });
+  }
+  renderPriceRows();
+};
 window.removePriceRow = function(i) { editPrices.splice(i,1); renderPriceRows(); };
+window.addVariant = function(i) { if (!editPrices[i].variants) editPrices[i].variants=[]; editPrices[i].variants.push({name:'',price:''}); renderPriceRows(); };
+window.removeVariant = function(pi, vi) { editPrices[pi].variants.splice(vi,1); renderPriceRows(); };
+
 function renderPriceRows() {
   const c=document.getElementById('ef_pricesContainer'); if(!c) return;
-  c.innerHTML=editPrices.map((p,i)=>`<div class="price-row"><input type="text" value="${esc(p.flavor)}" placeholder="Sabor / Nome" oninput="editPrices[${i}].flavor=this.value"><input type="text" value="${esc(p.price)}" placeholder="Preço" style="max-width:130px;" oninput="editPrices[${i}].price=this.value"><button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button></div>`).join('');
+  c.innerHTML = editPrices.map((p,i) => {
+    if (p.variants) {
+      // Variant-style price row
+      const variantRows = p.variants.map((v,vi) => `
+        <div class="price-row" style="margin-top:.35rem;padding-left:1rem;">
+          <input type="text" value="${esc(v.name)}" placeholder="Ex: Travessa pequena" oninput="editPrices[${i}].variants[${vi}].name=this.value">
+          <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="editPrices[${i}].variants[${vi}].price=this.value">
+          <button class="btn btn-danger btn-sm" onclick="removeVariant(${i},${vi})">✕</button>
+        </div>`).join('');
+      return `<div style="background:var(--rose-pale);border:1px solid rgba(232,96,122,.15);border-radius:12px;padding:.85rem;margin-bottom:.6rem;">
+        <div class="price-row">
+          <input type="text" value="${esc(p.flavor)}" placeholder="Nome do sabor (ex: Bannofe)" style="font-weight:600;" oninput="editPrices[${i}].flavor=this.value">
+          <button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button>
+        </div>
+        <div class="field" style="margin:.5rem 0 .3rem;">
+          <input type="text" value="${esc(p.description||'')}" placeholder="Descrição (ex: Farofa de biscoito, doce de leite...)" oninput="editPrices[${i}].description=this.value">
+        </div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin:.4rem 0 .2rem .2rem;">Tamanhos / Preços:</div>
+        ${variantRows}
+        <button class="btn btn-secondary btn-sm" style="margin-top:.4rem;" onclick="addVariant(${i})">+ Tamanho</button>
+      </div>`;
+    } else {
+      return `<div class="price-row">
+        <input type="text" value="${esc(p.flavor)}" placeholder="Sabor / Nome" oninput="editPrices[${i}].flavor=this.value">
+        <input type="text" value="${esc(p.price||'')}" placeholder="Preço" style="max-width:130px;" oninput="editPrices[${i}].price=this.value">
+        <button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button>
+      </div>`;
+    }
+  }).join('');
 }
 window.addTag = function(type) {
   const id=type==='doughs'?'ef_doughInput':'ef_fillingsInput';
