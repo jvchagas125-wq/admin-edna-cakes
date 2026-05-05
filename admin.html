@@ -389,7 +389,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc }
+import { getFirestore, doc, getDoc, setDoc }
   from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -426,22 +426,35 @@ async function loadData() {
   try {
     const snap = await getDoc(DOCREF());
     if (snap.exists()) {
-      appData = { ...DEFAULT, ...snap.data() };
-      if (!appData.products?.length) appData.products = DEFAULT.products;
+      const saved = snap.data();
+      appData = {
+        logo:     saved.logo     || DEFAULT.logo,
+        contatos: saved.contatos || DEFAULT.contatos,
+        info:     saved.info     || DEFAULT.info,
+        products: (saved.products && saved.products.length) ? saved.products : DEFAULT.products
+      };
     } else {
-      await setDoc(DOCREF(), DEFAULT);
+      await setDoc(DOCREF(), DEFAULT, { merge: true });
+      appData = JSON.parse(JSON.stringify(DEFAULT));
     }
-  } catch(e) { showToast('Erro ao carregar dados.', 'error'); }
+  } catch(e) {
+    console.error('loadData error:', e);
+    appData = JSON.parse(JSON.stringify(DEFAULT));
+    setTimeout(() => showToast('Aviso: usando dados padrao. Verifique as regras do Firestore.', 'error'), 500);
+  }
 }
 
 async function saveToFirestore(patch) {
   setSaveStatus('saving');
   try {
-    await updateDoc(DOCREF(), patch);
+    await setDoc(DOCREF(), patch, { merge: true });
+    Object.assign(appData, patch);
     setSaveStatus('saved');
   } catch(e) {
-    try { await setDoc(DOCREF(), { ...appData, ...patch }); setSaveStatus('saved'); }
-    catch(e2) { setSaveStatus(''); showToast('Erro ao salvar. Tente novamente.', 'error'); throw e2; }
+    console.error('saveToFirestore error:', e);
+    setSaveStatus('');
+    showToast('Erro ao salvar: ' + (e.code || e.message || 'verifique a conexao.'), 'error');
+    throw e;
   }
 }
 
