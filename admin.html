@@ -419,6 +419,28 @@ const DEFAULT = {
   ]
 };
 
+// ── CLOUDINARY CONFIG ──
+const CLOUDINARY_CLOUD = 'dcvhqnr1c';
+const CLOUDINARY_PRESET = 'edna-cakes';
+const CLOUDINARY_API_KEY = '391185955112779';
+
+async function uploadToCloudinary(file, folder = 'edna-cakes') {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY_PRESET);
+  fd.append('api_key', CLOUDINARY_API_KEY);
+  fd.append('folder', folder);
+  // Use f_auto,q_auto for automatic format and quality optimization
+  fd.append('transformation', 'f_auto,q_auto');
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    method: 'POST', body: fd
+  });
+  if (!res.ok) throw new Error('Cloudinary upload failed: ' + res.status);
+  const data = await res.json();
+  // Return optimized URL with auto format and quality
+  return data.secure_url.replace('/upload/', '/upload/f_auto,q_auto/');
+}
+
 let appData = JSON.parse(JSON.stringify(DEFAULT));
 
 // ── FIRESTORE ──
@@ -635,8 +657,23 @@ function renderEditForm(p) {
   });
 }
 
-window.handleGalleryUpload = function(e) {
-  Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{editImgs.push(ev.target.result);renderGalleryPreviews();};r.readAsDataURL(f);});
+window.handleGalleryUpload = async function(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const label = document.querySelector('label[for="ef_galleryFiles"]');
+  if (label) label.innerHTML = '<span class="spinner-inline"></span><span style="font-size:.8rem;color:var(--text-muted)">Enviando '+files.length+' foto(s)...</span>';
+  try {
+    for (const f of files) {
+      const url = await uploadToCloudinary(f, 'edna-cakes/galeria');
+      editImgs.push(url);
+      renderGalleryPreviews();
+    }
+    showToast(files.length + ' foto(s) enviada(s) com sucesso! ✓', 'success');
+  } catch(err) {
+    showToast('Erro no upload: ' + err.message, 'error');
+  } finally {
+    if (label) label.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><strong>Upload de fotos</strong><span>Pode selecionar várias</span>';
+  }
 };
 window.addGalleryUrl = function() {
   const i=document.getElementById('ef_galleryUrlAdd');
@@ -647,11 +684,21 @@ function renderGalleryPreviews() {
   const w=document.getElementById('ef_galleryPreviews'); if(!w) return;
   w.innerHTML=editImgs.map((u,i)=>`<div class="photo-preview-item"><img src="${u}" onerror="this.style.background='var(--rose-pale)'"><button class="remove-photo" onclick="removeGalleryImg(${i})">✕</button></div>`).join('');
 }
-window.handleCardImgUpload = function(e) {
+window.handleCardImgUpload = async function(e) {
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=ev=>{document.getElementById('ef_cardImage').value=ev.target.result;const p=document.getElementById('ef_cardPreview');if(p){p.src=ev.target.result;p.style.display='block';}};
-  r.readAsDataURL(f);
+  const label = document.querySelector('label[for="ef_cardImgFile"]');
+  if (label) label.innerHTML = '<span class="spinner-inline"></span><span style="font-size:.8rem;color:var(--text-muted)">Enviando...</span>';
+  try {
+    const url = await uploadToCloudinary(f, 'edna-cakes/cards');
+    document.getElementById('ef_cardImage').value = url;
+    const prev = document.getElementById('ef_cardPreview');
+    if (prev) { prev.src = url; prev.style.display = 'block'; }
+    showToast('Foto do card enviada! ✓', 'success');
+  } catch(err) {
+    showToast('Erro no upload: ' + err.message, 'error');
+  } finally {
+    if (label) label.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><strong>Upload da foto</strong><span>Clique para selecionar</span>';
+  }
 };
 window.addPriceRow = function() { editPrices.push({flavor:'',price:''}); renderPriceRows(); };
 window.removePriceRow = function(i) { editPrices.splice(i,1); renderPriceRows(); };
@@ -712,11 +759,21 @@ function renderLogoPanel() {
   const el=document.getElementById('currentLogoPreview');
   if(el) el.src=appData.logo||DEFAULT.logo;
 }
-window.handleLogoUpload = function(e) {
+window.handleLogoUpload = async function(e) {
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=ev=>{document.getElementById('logoNewImg').src=ev.target.result;document.getElementById('logoNewPreview').style.display='block';document.getElementById('logoUrlInput').value=ev.target.result;};
-  r.readAsDataURL(f);
+  const label = document.querySelector('label[for="logoFileInput"]');
+  if (label) label.innerHTML = '<span class="spinner-inline"></span><span style="font-size:.8rem;color:var(--text-muted)">Enviando logo...</span>';
+  try {
+    const url = await uploadToCloudinary(f, 'edna-cakes/logo');
+    document.getElementById('logoNewImg').src = url;
+    document.getElementById('logoNewPreview').style.display = 'block';
+    document.getElementById('logoUrlInput').value = url;
+    showToast('Logo enviado com sucesso! ✓', 'success');
+  } catch(err) {
+    showToast('Erro no upload: ' + err.message, 'error');
+  } finally {
+    if (label) label.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><strong>Clique para fazer upload</strong><span>PNG ou JPG transparente</span>';
+  }
 };
 window.saveLogo = async function() {
   const url=document.getElementById('logoUrlInput').value.trim();
