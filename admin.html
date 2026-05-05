@@ -618,7 +618,13 @@ function renderProductList() {
     </div>`).join('');
 }
 
-let editIdx=null, editImgs=[], editPrices=[], editDoughs=[], editFillings=[];
+// Expose to window so inline oninput handlers can access them
+window.editPrices = [];
+window.editDoughs = [];
+window.editFillings = [];
+let editIdx=null, editImgs=[];
+// Use window.editPrices etc throughout
+Object.defineProperty(window, 'editPricesList', { get: () => window.editPrices });
 
 window.openEditProduct = function(i) {
   editIdx=i; const p=appData.products[i];
@@ -641,7 +647,7 @@ window.closeEditPanel = function() {
 };
 
 function renderEditForm(p) {
-  editImgs=[...(p.images||[])]; editPrices=[...(p.prices||[])]; editDoughs=[...(p.doughs||[])]; editFillings=[...(p.fillings||[])];
+  editImgs=[...(p.images||[])]; window.editPrices=[...(p.prices||[])]; window.editDoughs=[...(p.doughs||[])]; window.editFillings=[...(p.fillings||[])];
   document.getElementById('editPanelBody').innerHTML=`
     <div class="grid-2">
       <div class="field"><label>Nome do item</label><input type="text" id="ef_title" value="${esc(p.title)}" placeholder="Ex: Naked Cake"></div>
@@ -769,34 +775,34 @@ window.handleCardImgUpload = async function(e) {
 };
 window.addPriceRow = function(type) {
   if (type === 'variant') {
-    editPrices.push({ flavor:'', description:'', variants:[{name:'Travessa pequena',price:''},{name:'Travessa grande',price:''}] });
+    window.editPrices.push({ flavor:'', description:'', variants:[{name:'Travessa pequena',price:''},{name:'Travessa grande',price:''}] });
   } else {
-    editPrices.push({ flavor:'', price:'' });
+    window.editPrices.push({ flavor:'', price:'' });
   }
   renderPriceRows();
 };
-window.removePriceRow = function(i) { editPrices.splice(i,1); renderPriceRows(); };
-window.addVariant = function(i) { if (!editPrices[i].variants) editPrices[i].variants=[]; editPrices[i].variants.push({name:'',price:''}); renderPriceRows(); };
-window.removeVariant = function(pi, vi) { editPrices[pi].variants.splice(vi,1); renderPriceRows(); };
+window.removePriceRow = function(i) { window.editPrices.splice(i,1); renderPriceRows(); };
+window.addVariant = function(i) { if (!window.editPrices[i].variants) window.editPrices[i].variants=[]; window.editPrices[i].variants.push({name:'',price:''}); renderPriceRows(); };
+window.removeVariant = function(pi, vi) { window.editPrices[pi].variants.splice(vi,1); renderPriceRows(); };
 
 function renderPriceRows() {
   const c=document.getElementById('ef_pricesContainer'); if(!c) return;
-  c.innerHTML = editPrices.map((p,i) => {
+  c.innerHTML = window.editPrices.map((p,i) => {
     if (p.variants) {
       // Variant-style price row
       const variantRows = p.variants.map((v,vi) => `
         <div class="price-row" style="margin-top:.35rem;padding-left:1rem;">
-          <input type="text" value="${esc(v.name)}" placeholder="Ex: Travessa pequena" oninput="editPrices[${i}].variants[${vi}].name=this.value">
-          <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="editPrices[${i}].variants[${vi}].price=this.value">
+          <input type="text" value="${esc(v.name)}" placeholder="Ex: Travessa pequena" oninput="window.editPrices[${i}].variants[${vi}].name=this.value">
+          <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="window.editPrices[${i}].variants[${vi}].price=this.value">
           <button class="btn btn-danger btn-sm" onclick="removeVariant(${i},${vi})">✕</button>
         </div>`).join('');
       return `<div style="background:var(--rose-pale);border:1px solid rgba(232,96,122,.15);border-radius:12px;padding:.85rem;margin-bottom:.6rem;">
         <div class="price-row">
-          <input type="text" value="${esc(p.flavor)}" placeholder="Nome do sabor (ex: Bannofe)" style="font-weight:600;" oninput="editPrices[${i}].flavor=this.value">
+          <input type="text" value="${esc(p.flavor)}" placeholder="Nome do sabor (ex: Bannofe)" style="font-weight:600;" oninput="window.editPrices[${i}].flavor=this.value">
           <button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button>
         </div>
         <div class="field" style="margin:.5rem 0 .3rem;">
-          <input type="text" value="${esc(p.description||'')}" placeholder="Descrição (ex: Farofa de biscoito, doce de leite...)" oninput="editPrices[${i}].description=this.value">
+          <input type="text" value="${esc(p.description||'')}" placeholder="Descrição (ex: Farofa de biscoito, doce de leite...)" oninput="window.editPrices[${i}].description=this.value">
         </div>
         <div style="font-size:.75rem;color:var(--text-muted);margin:.4rem 0 .2rem .2rem;">Tamanhos / Preços:</div>
         ${variantRows}
@@ -804,8 +810,8 @@ function renderPriceRows() {
       </div>`;
     } else {
       return `<div class="price-row">
-        <input type="text" value="${esc(p.flavor)}" placeholder="Sabor / Nome" oninput="editPrices[${i}].flavor=this.value">
-        <input type="text" value="${esc(p.price||'')}" placeholder="Preço" style="max-width:130px;" oninput="editPrices[${i}].price=this.value">
+        <input type="text" value="${esc(p.flavor)}" placeholder="Sabor / Nome" oninput="window.editPrices[${i}].flavor=this.value">
+        <input type="text" value="${esc(p.price||'')}" placeholder="Preço" style="max-width:130px;" oninput="window.editPrices[${i}].price=this.value">
         <button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button>
       </div>`;
     }
@@ -814,14 +820,14 @@ function renderPriceRows() {
 window.addTag = function(type) {
   const id=type==='doughs'?'ef_doughInput':'ef_fillingsInput';
   const input=document.getElementById(id); if(!input||!input.value.trim()) return;
-  if(type==='doughs') editDoughs.push(input.value.trim()); else editFillings.push(input.value.trim());
+  if(type==='doughs') window.editDoughs.push(input.value.trim()); else window.editFillings.push(input.value.trim());
   input.value=''; renderTags(type);
 };
 window.removeTag = function(type,i) {
-  if(type==='doughs') editDoughs.splice(i,1); else editFillings.splice(i,1); renderTags(type);
+  if(type==='doughs') window.editDoughs.splice(i,1); else window.editFillings.splice(i,1); renderTags(type);
 };
 function renderTags(type) {
-  const arr=type==='doughs'?editDoughs:editFillings;
+  const arr=type==='doughs'?window.editDoughs:window.editFillings;
   const el=document.getElementById(`ef_${type}Tags`); if(!el) return;
   el.innerHTML=arr.map((t,i)=>`<span class="tag-pill">${esc(t)} <button onclick="removeTag('${type}',${i})">✕</button></span>`).join('');
 }
@@ -838,8 +844,8 @@ window.saveProduct = async function() {
     cardImage:document.getElementById('ef_cardImage').value.trim(),
     images:[...editImgs],
     pricesLabel:document.getElementById('ef_pricesLabel').value.trim()||'Preços e Sabores',
-    prices:editPrices.filter(p=>p.flavor),
-    doughs:[...editDoughs], fillings:[...editFillings],
+    prices:window.editPrices.filter(p=>p.flavor),
+    doughs:[...window.editDoughs], fillings:[...window.editFillings],
     observations:document.getElementById('ef_observations').value.trim()
   };
   if(editIdx!==null) appData.products[editIdx]=pd; else appData.products.push(pd);
