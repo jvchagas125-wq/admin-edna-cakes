@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Edna Cakes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --rose:#e8607a;--rose-dark:#c94060;--rose-light:#f9d0d8;--rose-pale:#fdf0f2;
+      --text:#2d1b1e;--text-muted:#8a6b70;--white:#fff;--sidebar:#1e1215;--sidebar-hover:#2e1a1f;
+      --green:#16a34a;--green-light:#dcfce7;--red:#dc2626;--red-light:#fee2e2;
+      --border:rgba(232,96,122,0.15);--shadow:0 2px 12px rgba(45,27,30,0.08);
+    }
+    body{font-family:'DM Sans',sans-serif;background:#f5eded;color:var(--text);min-height:100vh;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+
+    #loadingScreen{position:fixed;inset:0;background:linear-gradient(135deg,#2d1b1e,#3d2227);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:9999;}
+    #loadingScreen img{height:64px;filter:brightness(0) invert(1);opacity:.9;animation:pulse 1.5s ease-in-out infinite;}
+    #loadingScreen p{color:rgba(255,255,255,.5);font-size:.85rem;}
+
+    #loginScreen{min-height:100vh;display:none;align-items:center;justify-content:center;background:linear-gradient(135deg,#2d1b1e,#3d2227);}
+    .login-box{background:var(--white);border-radius:24px;padding:2.5rem 2rem;width:min(380px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;}
+    .login-logo{height:72px;margin-bottom:1.5rem;}
+    .login-title{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--text);margin-bottom:.4rem;}
+    .login-sub{font-size:.85rem;color:var(--text-muted);margin-bottom:2rem;}
+    .login-field{width:100%;padding:.8rem 1rem;border:1.5px solid var(--border);border-radius:12px;font-size:.9rem;font-family:inherit;margin-bottom:.85rem;outline:none;transition:border-color .2s;}
+    .login-field:focus{border-color:var(--rose);}
+    .login-btn{width:100%;padding:.9rem;background:linear-gradient(135deg,var(--rose),var(--rose-dark));color:white;border:none;border-radius:12px;font-size:.95rem;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:.5rem;}
+    .login-btn:hover{opacity:.9;}.login-btn:disabled{opacity:.6;cursor:not-allowed;}
+    .login-error{background:var(--red-light);color:var(--red);font-size:.82rem;padding:.6rem .9rem;border-radius:8px;margin-bottom:.85rem;display:none;}
+    .login-spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;}
+    .spinner-inline{width:14px;height:14px;border:2px solid rgba(232,96,122,.3);border-top-color:var(--rose);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+
+    #adminApp{display:none;min-height:100vh;}
+    .layout{display:flex;min-height:100vh;}
+
+    .sidebar{width:240px;background:var(--sidebar);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;transition:transform .3s ease;}
+    .sidebar-brand{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid rgba(255,255,255,.08);}
+    .sidebar-brand img{height:44px;filter:brightness(0) invert(1);opacity:.9;}
+    .sidebar-brand p{color:rgba(255,255,255,.45);font-size:.72rem;margin-top:.35rem;letter-spacing:.05em;}
+    .sidebar-nav{flex:1;padding:1rem 0;overflow-y:auto;}
+    .nav-label{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);padding:.75rem 1.25rem .4rem;}
+    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;color:rgba(255,255,255,.65);cursor:pointer;transition:background .2s,color .2s;font-size:.88rem;border-left:3px solid transparent;user-select:none;}
+    .nav-item:hover{background:var(--sidebar-hover);color:rgba(255,255,255,.9);}
+    .nav-item.active{background:rgba(232,96,122,.15);color:var(--rose-light);border-left-color:var(--rose);font-weight:600;}
+    .nav-item svg{width:16px;height:16px;flex-shrink:0;}
+    .sidebar-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,.08);}
+    .user-info{color:rgba(255,255,255,.45);font-size:.75rem;margin-bottom:.6rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .logout-btn{display:flex;align-items:center;gap:.6rem;color:rgba(255,255,255,.45);font-size:.82rem;cursor:pointer;transition:color .2s;background:none;border:none;font-family:inherit;width:100%;}
+    .logout-btn:hover{color:rgba(255,255,255,.8);}
+    .logout-btn svg{width:14px;height:14px;}
+
+    .main{margin-left:240px;flex:1;min-height:100vh;}
+    .topbar{background:var(--white);padding:0 1.5rem;height:60px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;}
+    .topbar-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--text);}
+    .topbar-right{display:flex;align-items:center;gap:.75rem;}
+    .save-status{font-size:.75rem;color:var(--text-muted);display:flex;align-items:center;gap:.35rem;}
+    .save-status.saving{color:var(--rose)}.save-status.saved{color:var(--green)}
+    .save-status svg{width:12px;height:12px;}
+    .view-site-btn{display:flex;align-items:center;gap:.4rem;background:var(--rose-pale);color:var(--rose-dark);border:1px solid var(--border);border-radius:8px;padding:.45rem .9rem;font-size:.8rem;font-weight:500;cursor:pointer;text-decoration:none;font-family:inherit;transition:background .2s;}
+    .view-site-btn:hover{background:var(--rose-light);}
+    .view-site-btn svg{width:13px;height:13px;}
+    .hamburger-mobile{display:none;background:none;border:none;cursor:pointer;color:var(--text);}
+    .hamburger-mobile svg{width:22px;height:22px;}
+    .content{padding:1.75rem 1.5rem;max-width:900px;}
+
+    .panel{display:none;}.panel.active{display:block;}
+
+    .card{background:var(--white);border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:1.25rem;}
+    .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;}
+    .card-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:.5rem;}
+    .card-title svg{width:16px;height:16px;color:var(--rose);}
+
+    label{display:block;font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:.35rem;letter-spacing:.03em;}
+    input[type=text],input[type=email],input[type=tel],input[type=url],input[type=password],textarea{width:100%;padding:.7rem .9rem;border:1.5px solid var(--border);border-radius:10px;font-size:.88rem;font-family:inherit;color:var(--text);background:var(--white);outline:none;transition:border-color .2s,box-shadow .2s;}
+    input:focus,textarea:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(232,96,122,.12);}
+    textarea{resize:vertical;min-height:80px;line-height:1.5;}
+    .field{margin-bottom:1rem;}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+    @media(max-width:560px){.grid-2{grid-template-columns:1fr;}}
+
+    .photo-upload-row{display:flex;align-items:flex-start;gap:1rem;background:var(--rose-pale);border:1.5px dashed rgba(232,96,122,.35);border-radius:12px;padding:1rem;flex-wrap:wrap;}
+    .photo-upload-area{flex:1;min-width:180px;}
+    .photo-upload-area input[type=file]{display:none;}
+    .photo-upload-label{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;padding:1rem;border:1.5px dashed rgba(232,96,122,.4);border-radius:10px;cursor:pointer;background:white;transition:border-color .2s,background .2s;text-align:center;}
+    .photo-upload-label:hover{border-color:var(--rose);background:var(--rose-pale);}
+    .photo-upload-label svg{width:22px;height:22px;color:var(--rose);}
+    .photo-upload-label span{font-size:.8rem;color:var(--text-muted);}
+    .photo-upload-label strong{font-size:.85rem;color:var(--rose);}
+    .photo-size-hint{flex-shrink:0;background:white;border-radius:10px;padding:.75rem 1rem;min-width:160px;}
+    .photo-size-hint p{font-size:.75rem;color:var(--text-muted);line-height:1.5;}
+    .photo-size-hint strong{color:var(--text);display:block;font-size:.78rem;margin-bottom:.3rem;}
+    .photo-preview-wrap{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem;}
+    .photo-preview-item{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:2px solid var(--rose-light);}
+    .photo-preview-item img{width:100%;height:100%;object-fit:cover;}
+    .photo-preview-item .remove-photo{position:absolute;top:2px;right:2px;width:18px;height:18px;background:rgba(220,38,38,.85);border-radius:50%;border:none;cursor:pointer;color:white;font-size:10px;display:flex;align-items:center;justify-content:center;}
+
+    .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.2rem;border-radius:10px;font-size:.85rem;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:all .2s;}
+    .btn svg{width:14px;height:14px;}
+    .btn-primary{background:linear-gradient(135deg,var(--rose),var(--rose-dark));color:white;box-shadow:0 3px 10px rgba(232,96,122,.3);}
+    .btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+    .btn-secondary{background:var(--rose-pale);color:var(--rose-dark);border:1px solid var(--border);}
+    .btn-secondary:hover{background:var(--rose-light);}
+    .btn-danger{background:var(--red-light);color:var(--red);border:1px solid rgba(220,38,38,.2);}
+    .btn-danger:hover{background:#fecaca;}
+    .btn-sm{padding:.4rem .75rem;font-size:.78rem;}
+
+    .product-list-item{display:flex;align-items:center;gap:1rem;padding:.85rem 1rem;background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:.6rem;transition:box-shadow .2s;}
+    .product-list-item:hover{box-shadow:0 4px 16px rgba(232,96,122,.1);}
+    .product-thumb{width:52px;height:52px;border-radius:10px;object-fit:cover;background:var(--rose-pale);flex-shrink:0;}
+    .product-info{flex:1;min-width:0;}
+    .product-info h4{font-size:.9rem;font-weight:600;color:var(--text);}
+    .product-info p{font-size:.78rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .product-actions{display:flex;gap:.4rem;flex-shrink:0;}
+
+    .price-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;}
+    .price-row input{flex:1;min-width:100px;}
+
+    .tags-editor{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem;}
+    .tag-pill{display:inline-flex;align-items:center;gap:.3rem;background:var(--rose-pale);color:var(--rose-dark);border:1px solid rgba(232,96,122,.2);font-size:.78rem;padding:.3rem .65rem;border-radius:50px;}
+    .tag-pill button{background:none;border:none;cursor:pointer;color:var(--rose);font-size:12px;line-height:1;padding:0;}
+    .tag-add-row{display:flex;gap:.5rem;}
+    .tag-add-row input{flex:1;}
+
+    .toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:#1e1215;color:white;padding:.85rem 1.25rem;border-radius:12px;font-size:.88rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.25);transform:translateY(20px);opacity:0;transition:all .3s ease;pointer-events:none;display:flex;align-items:center;gap:.6rem;max-width:300px;}
+    .toast.show{transform:translateY(0);opacity:1;}
+    .toast.success{border-left:3px solid #22c55e;}
+    .toast.error{border-left:3px solid var(--red);}
+    .toast svg{width:16px;height:16px;flex-shrink:0;}
+
+    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s;}
+    .confirm-overlay.open{opacity:1;pointer-events:all;}
+    .confirm-box{background:white;border-radius:16px;padding:1.75rem;width:min(360px,95vw);box-shadow:0 20px 60px rgba(0,0,0,.2);}
+    .confirm-box h3{font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:.6rem;}
+    .confirm-box p{font-size:.85rem;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.5;}
+    .confirm-btns{display:flex;gap:.75rem;justify-content:flex-end;}
+
+    #editProductPanel{position:fixed;top:0;right:0;width:min(560px,100vw);height:100vh;background:white;z-index:200;box-shadow:-8px 0 40px rgba(0,0,0,.15);overflow-y:auto;transform:translateX(100%);transition:transform .35s cubic-bezier(.77,0,.175,1);}
+    #editProductPanel.open{transform:translateX(0);}
+    .edit-panel-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1;}
+    .edit-panel-header h2{font-family:'Playfair Display',serif;font-size:1.1rem;}
+    .edit-panel-close{background:var(--rose-pale);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--rose);font-size:16px;transition:background .2s;}
+    .edit-panel-close:hover{background:var(--rose-light);}
+    .edit-panel-body{padding:1.5rem;}
+    .panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:199;opacity:0;pointer-events:none;transition:opacity .3s;}
+    .panel-overlay.open{opacity:1;pointer-events:all;}
+
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49;}
+    @media(max-width:768px){
+      .sidebar{transform:translateX(-100%);}.sidebar.open{transform:translateX(0);}
+      .sidebar-overlay{display:block;opacity:0;pointer-events:none;transition:opacity .3s;}.sidebar-overlay.open{opacity:1;pointer-events:all;}
+      .main{margin-left:0;}.hamburger-mobile{display:flex;}.content{padding:1.25rem 1rem;}
+    }
+
+    .divider{border:none;border-top:1px solid var(--border);margin:1.25rem 0;}
+    .section-subtitle{font-size:.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.5;}
+    .badge{display:inline-block;font-size:.7rem;font-weight:600;padding:.2rem .6rem;border-radius:50px;}
+    .badge-rose{background:var(--rose-pale);color:var(--rose-dark);}
+    .current-url{font-size:.75rem;color:var(--text-muted);margin-top:.3rem;}
+    .add-btn-row{display:flex;justify-content:flex-end;margin-top:.5rem;}
+    .empty-state{text-align:center;padding:2rem;color:var(--text-muted);font-size:.88rem;}
+  </style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <img src="https://i.imgur.com/F6PR9Bu.png" alt="Edna Cakes" onerror="this.style.display='none'">
+  <p>Carregando painel...</p>
+</div>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <img src="https://i.imgur.com/F6PR9Bu.png" alt="Edna Cakes" class="login-logo" onerror="this.style.display='none'">
+    <h2 class="login-title">Painel Admin</h2>
+    <p class="login-sub">Entre com seu e-mail e senha</p>
+    <div class="login-error" id="loginError"></div>
+    <input type="email" class="login-field" id="loginEmail" placeholder="seu@email.com" autocomplete="email">
+    <input type="password" class="login-field" id="loginPass" placeholder="Senha" autocomplete="current-password">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div id="adminApp">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <img src="https://i.imgur.com/F6PR9Bu.png" alt="Edna Cakes" onerror="this.style.display='none'">
+        <p>Painel Administrativo</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Geral</div>
+        <div class="nav-item active" onclick="showPanel('cardapio',this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+          Cardápio
+        </div>
+        <div class="nav-item" onclick="showPanel('logo',this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          Logo da Marca
+        </div>
+        <div class="nav-item" onclick="showPanel('contatos',this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16a2 2 0 0 1 .27.92z"/></svg>
+          Contatos
+        </div>
+        <div class="nav-item" onclick="showPanel('info',this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Informações
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info" id="userEmail"></div>
+        <button class="logout-btn" onclick="doLogout()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
+        </button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <button class="hamburger-mobile" onclick="openSidebar()">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <span class="topbar-title" id="topbarTitle">Cardápio</span>
+        </div>
+        <div class="topbar-right">
+          <span class="save-status" id="saveStatus"></span>
+          <a href="index.html" target="_blank" class="view-site-btn">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Ver site
+          </a>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- CARDÁPIO -->
+        <div class="panel active" id="panel-cardapio">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+                Itens do Cardápio
+              </div>
+              <button class="btn btn-primary" onclick="openNewProduct()">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Novo item
+              </button>
+            </div>
+            <p class="section-subtitle">Clique em "Editar" para alterar fotos, preços, sabores e descrição.</p>
+            <div id="productListContainer"><div class="empty-state"><span class="spinner-inline"></span> Carregando...</div></div>
+          </div>
+        </div>
+
+        <!-- LOGO -->
+        <div class="panel" id="panel-logo">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:1rem;">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+              Logo da Marca
+            </div>
+            <p class="section-subtitle">O logo aparece no topo do site e na seção principal.</p>
+            <div class="field">
+              <label>Logo atual</label>
+              <img id="currentLogoPreview" src="" alt="Logo" style="height:80px;object-fit:contain;border-radius:12px;border:2px solid var(--rose-light);display:block;margin-top:.4rem;">
+            </div>
+            <div class="field">
+              <label>Substituir logo</label>
+              <div class="photo-upload-row">
+                <div class="photo-upload-area">
+                  <input type="file" id="logoFileInput" accept="image/*" onchange="handleLogoUpload(event)">
+                  <label for="logoFileInput" class="photo-upload-label">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <strong>Clique para fazer upload</strong>
+                    <span>PNG ou JPG transparente</span>
+                  </label>
+                </div>
+                <div class="photo-size-hint">
+                  <strong>📐 Tamanho ideal</strong>
+                  <p>• <b>400 × 400 px</b><br>• Fundo transparente (PNG)<br>• Máx. 500 KB</p>
+                </div>
+              </div>
+              <div id="logoNewPreview" style="margin-top:.75rem;display:none;">
+                <img id="logoNewImg" style="height:70px;object-fit:contain;border-radius:10px;border:2px solid var(--rose-light);">
+              </div>
+            </div>
+            <div class="field">
+              <label>Ou cole a URL da imagem</label>
+              <input type="url" id="logoUrlInput" placeholder="https://res.cloudinary.com/...">
+            </div>
+            <button class="btn btn-primary" onclick="saveLogo()">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Salvar logo
+            </button>
+          </div>
+        </div>
+
+        <!-- CONTATOS -->
+        <div class="panel" id="panel-contatos">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:1rem;">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16a2 2 0 0 1 .27.92z"/></svg>
+              Contatos
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Número do WhatsApp</label>
+                <input type="tel" id="contactWpp" placeholder="5522996079822">
+                <p class="current-url">Somente números com DDI. Ex: 5522999999999</p>
+              </div>
+              <div class="field">
+                <label>Exibição do WhatsApp</label>
+                <input type="text" id="contactWppDisplay" placeholder="(22) 99607-9822">
+              </div>
+            </div>
+            <div class="field">
+              <label>Instagram (usuário, sem @)</label>
+              <input type="text" id="contactIg" placeholder="edna_cakes024">
+            </div>
+            <button class="btn btn-primary" onclick="saveContatos()">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Salvar contatos
+            </button>
+          </div>
+        </div>
+
+        <!-- INFO -->
+        <div class="panel" id="panel-info">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:1rem;">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Informações Importantes
+            </div>
+            <p class="section-subtitle">Avisos que aparecem na seção de contatos do site.</p>
+            <div id="infoItemsContainer"></div>
+            <div class="add-btn-row">
+              <button class="btn btn-secondary" onclick="addInfoItem()">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Adicionar item
+              </button>
+            </div>
+            <hr class="divider">
+            <button class="btn btn-primary" onclick="saveInfo()">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Salvar informações
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PANEL -->
+<div class="panel-overlay" id="panelOverlay" onclick="closeEditPanel()"></div>
+<div id="editProductPanel">
+  <div class="edit-panel-header">
+    <h2 id="editPanelTitle">Editar item</h2>
+    <button class="edit-panel-close" onclick="closeEditPanel()">✕</button>
+  </div>
+  <div class="edit-panel-body" id="editPanelBody"></div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Confirmar exclusão</h3>
+    <p id="confirmText">Tem certeza?</p>
+    <div class="confirm-btns">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" id="toastIcon"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc }
+  from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB07t3jzqRz7kj20HwQ7Qw0A8QhIztDO20",
+  authDomain: "edna-cakes.firebaseapp.com",
+  projectId: "edna-cakes",
+  storageBucket: "edna-cakes.firebasestorage.app",
+  messagingSenderId: "231236226396",
+  appId: "1:231236226396:web:9d2af6ca43d26c91800599"
+};
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const DOCREF = () => doc(db, 'site', 'dados');
+
+const DEFAULT = {
+  logo: 'https://i.imgur.com/F6PR9Bu.png',
+  contatos: { wppNumber:'5522996079822', wppDisplay:'(22) 99607-9822', instagram:'edna_cakes024' },
+  info: ['Encomenda mediante entrada de 50%.','Topper não incluso no valor.','Taxa de entrega: R$10,00.','Encomendas somente pelo WhatsApp.'],
+  products: [
+    { id:'cupcakes', title:'Bolos Naked Cake', badge:'Popular', shortDesc:'Elegantes, personalizáveis e irresistíveis', description:'Bolos elegantes e sofisticados com camadas de bolo e recheio à vista.', cardImage:'https://i.imgur.com/uFrFZGHm.png', images:['https://i.imgur.com/mJ6Krcx.jpeg','https://i.imgur.com/VOE52K6.jpeg','https://i.imgur.com/qI2w05l.jpeg','https://i.imgur.com/0b5QDSW.jpeg','https://i.imgur.com/k91fmpf.jpeg','https://i.imgur.com/EDCtl46.jpeg'], pricesLabel:'Tamanhos e Preços', prices:[{flavor:'15 cm (10–12 fatias)',price:'R$ 120,00'},{flavor:'20 cm (25–30 fatias)',price:'R$ 180,00'},{flavor:'25 cm (35–40 fatias)',price:'R$ 240,00'},{flavor:'30 cm (45–50 fatias)',price:'R$ 290,00'}], doughs:['Baunilha','Chocolate'], fillings:['Ninho gourmet','Brigadeiro de chocolate gourmet','Beijinho gourmet','Doce de leite gourmet','Prestígio','Ninho com Nutella','Ninho com Ouro Branco'], observations:'Pedido mínimo com 48h de antecedência.' },
+    { id:'bolos', title:'Rocambole', badge:'', shortDesc:'Doce, macio e irresistível', description:'Rocambole delicioso e macio, recheado com sabores gourmet!', cardImage:'https://i.imgur.com/upiuoy2m.png', images:['https://i.imgur.com/3DHYo7Q.jpeg','https://i.imgur.com/tBAfCzp.jpeg','https://i.imgur.com/hmLo7K6.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Doce de Leite Gourmet',price:'R$ 60,00'},{flavor:'Ninho Gourmet',price:'R$ 60,00'},{flavor:'Brigadeiro de Chocolate Gourmet',price:'R$ 60,00'},{flavor:'Beijinho Gourmet',price:'R$ 60,00'}], observations:'Pedido mínimo: 24h de antecedência.' },
+    { id:'brigadeiros', title:'Brownie', badge:'', shortDesc:'Sabores exclusivos e tradicionais', description:'Brownies deliciosos com chocolate belga e sabores exclusivos.', cardImage:'https://i.imgur.com/C0x8ygIm.png', images:['https://i.imgur.com/KvXeI1D.jpeg','https://i.imgur.com/XcukGOY.jpeg'], pricesLabel:'Preços e Recheios', prices:[{flavor:'Brigadeiro gourmet',price:'R$ 6,00/unid'},{flavor:'Doce de Leite gourmet',price:'R$ 6,00/unid'},{flavor:'Ninho gourmet',price:'R$ 6,00/unid'}], observations:'Realizar pedidos de no mínimo 5 unidades.' },
+    { id:'palhaitaliana', title:'Palha Italiana', badge:'', shortDesc:'Irresistível e deliciosa', description:'Palha Italiana irresistível e deliciosa, com recheios maravilhosos.', cardImage:'https://i.imgur.com/1qsbV8Nm.png', images:['https://i.imgur.com/KGE6F4j.jpeg','https://i.imgur.com/fUCRZP9.jpeg','https://i.imgur.com/5y0UeOo.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Ninho com Brigadeiro',price:'R$ 7,00/unid'},{flavor:'Ninho com Morango',price:'R$ 7,00/unid'},{flavor:'Ninho com Nutella',price:'R$ 10,00/unid'}], observations:'Mínimo de 5 unidades.' },
+    { id:'tortas', title:'Tortas', badge:'', shortDesc:'Deliciosas e personalizadas', description:'Tortas deliciosas com combinações perfeitas de sabores!', cardImage:'https://i.imgur.com/ueszqbkm.png', images:['https://i.imgur.com/5RithSH.jpeg','https://i.imgur.com/ht4QRky.jpeg','https://i.imgur.com/p8SVwdn.jpeg','https://i.imgur.com/8pRb80Q.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Bannofe',price:'R$ 40,00 / R$ 90,00'},{flavor:'Morangoffe',price:'R$ 50,00 / R$ 100,00'},{flavor:'Torta de Limão',price:'R$ 40,00 / R$ 90,00'},{flavor:'Torta Salgada (1kg)',price:'R$ 45,00'}], observations:'Pedido mínimo: 24h de antecedência.' },
+    { id:'minibolos', title:'Pavês', badge:'', shortDesc:'Deliciosos e irresistíveis', description:'Pavês deliciosos com combinações irresistíveis de sabores!', cardImage:'https://i.imgur.com/PbSOqNnm.png', images:['https://i.imgur.com/gFys2Mf.jpeg','https://i.imgur.com/UOl5OpH.jpeg','https://i.imgur.com/UDDC6Fv.jpeg','https://i.imgur.com/0UPtbAD.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Pavê trufado – Pequena',price:'R$ 25,00'},{flavor:'Pavê trufado – Média',price:'R$ 50,00'},{flavor:'Pavê trufado – Grande',price:'R$ 70,00'},{flavor:'Pavê de bombom – Pequena',price:'R$ 30,00'},{flavor:'Pavê de bombom – Média',price:'R$ 60,00'},{flavor:'Pavê de bombom – Grande',price:'R$ 80,00'}], observations:'Pedido mínimo: 24h de antecedência.' }
+  ]
+};
+
+let appData = JSON.parse(JSON.stringify(DEFAULT));
+
+// ── FIRESTORE ──
+async function loadData() {
+  try {
+    const snap = await getDoc(DOCREF());
+    if (snap.exists()) {
+      appData = { ...DEFAULT, ...snap.data() };
+      if (!appData.products?.length) appData.products = DEFAULT.products;
+    } else {
+      await setDoc(DOCREF(), DEFAULT);
+    }
+  } catch(e) { showToast('Erro ao carregar dados.', 'error'); }
+}
+
+async function saveToFirestore(patch) {
+  setSaveStatus('saving');
+  try {
+    await updateDoc(DOCREF(), patch);
+    setSaveStatus('saved');
+  } catch(e) {
+    try { await setDoc(DOCREF(), { ...appData, ...patch }); setSaveStatus('saved'); }
+    catch(e2) { setSaveStatus(''); showToast('Erro ao salvar. Tente novamente.', 'error'); throw e2; }
+  }
+}
+
+function setSaveStatus(s) {
+  const el = document.getElementById('saveStatus');
+  if (s==='saving') { el.className='save-status saving'; el.innerHTML='<span class="spinner-inline"></span> Salvando...'; }
+  else if (s==='saved') { el.className='save-status saved'; el.innerHTML='<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Salvo'; setTimeout(()=>{el.innerHTML='';el.className='save-status';},3000); }
+  else { el.innerHTML=''; el.className='save-status'; }
+}
+
+// ── AUTH ──
+onAuthStateChanged(auth, async user => {
+  document.getElementById('loadingScreen').style.display = 'none';
+  if (user) {
+    document.getElementById('userEmail').textContent = user.email;
+    await loadData();
+    document.getElementById('adminApp').style.display = 'block';
+    initAdmin();
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
+});
+
+window.doLogin = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const btn   = document.getElementById('loginBtn');
+  const err   = document.getElementById('loginError');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="login-spinner"></span> Entrando...';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    const msgs = { 'auth/invalid-credential':'E-mail ou senha incorretos.', 'auth/user-not-found':'Usuário não encontrado.', 'auth/wrong-password':'Senha incorreta.', 'auth/invalid-email':'E-mail inválido.', 'auth/too-many-requests':'Muitas tentativas. Aguarde.' };
+    err.textContent = msgs[e.code] || 'Erro ao entrar. Tente novamente.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = 'Entrar';
+  }
+};
+window.doLogout = async function() { await signOut(auth); document.getElementById('adminApp').style.display='none'; };
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') window.doLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPass').focus(); });
+
+// ── INIT ──
+function initAdmin() { renderProductList(); renderLogoPanel(); renderContatosPanel(); renderInfoPanel(); }
+
+// ── NAV ──
+const titles = { cardapio:'Cardápio', logo:'Logo da Marca', contatos:'Contatos', info:'Informações' };
+window.showPanel = function(name, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  document.getElementById('topbarTitle').textContent = titles[name];
+  closeSidebar();
+};
+window.openSidebar  = ()=>{ document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('open'); };
+window.closeSidebar = ()=>{ document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('open'); };
+
+// ── PRODUCTS ──
+function renderProductList() {
+  const c = document.getElementById('productListContainer');
+  if (!appData.products.length) { c.innerHTML='<div class="empty-state">Nenhum item. Clique em "Novo item".</div>'; return; }
+  c.innerHTML = appData.products.map((p,i)=>`
+    <div class="product-list-item">
+      <img class="product-thumb" src="${p.cardImage||''}" alt="${p.title}" onerror="this.style.background='var(--rose-pale)';this.src=''">
+      <div class="product-info">
+        <h4>${p.title} ${p.badge?`<span class="badge badge-rose">${p.badge}</span>`:''}</h4>
+        <p>${p.description||''}</p>
+      </div>
+      <div class="product-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openEditProduct(${i})">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(${i})">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+let editIdx=null, editImgs=[], editPrices=[], editDoughs=[], editFillings=[];
+
+window.openEditProduct = function(i) {
+  editIdx=i; const p=appData.products[i];
+  document.getElementById('editPanelTitle').textContent='Editar: '+p.title;
+  renderEditForm(p);
+  document.getElementById('editProductPanel').classList.add('open');
+  document.getElementById('panelOverlay').classList.add('open');
+};
+window.openNewProduct = function() {
+  editIdx=null;
+  renderEditForm({id:'',title:'',badge:'',shortDesc:'',description:'',cardImage:'',images:[],pricesLabel:'Preços e Sabores',prices:[],doughs:[],fillings:[],observations:''});
+  document.getElementById('editPanelTitle').textContent='Novo item';
+  document.getElementById('editProductPanel').classList.add('open');
+  document.getElementById('panelOverlay').classList.add('open');
+};
+window.closeEditPanel = function() {
+  document.getElementById('editProductPanel').classList.remove('open');
+  document.getElementById('panelOverlay').classList.remove('open');
+  editIdx=null;
+};
+
+function renderEditForm(p) {
+  editImgs=[...(p.images||[])]; editPrices=[...(p.prices||[])]; editDoughs=[...(p.doughs||[])]; editFillings=[...(p.fillings||[])];
+  document.getElementById('editPanelBody').innerHTML=`
+    <div class="grid-2">
+      <div class="field"><label>Nome do item</label><input type="text" id="ef_title" value="${esc(p.title)}" placeholder="Ex: Naked Cake"></div>
+      <div class="field"><label>Badge (opcional)</label><input type="text" id="ef_badge" value="${esc(p.badge||'')}" placeholder="Ex: Popular"></div>
+    </div>
+    <div class="field"><label>Descrição curta (card)</label><input type="text" id="ef_shortdesc" value="${esc(p.shortDesc||'')}" placeholder="Ex: Elegantes e personalizáveis"></div>
+    <div class="field"><label>Descrição completa (modal)</label><textarea id="ef_description" rows="3">${esc(p.description)}</textarea></div>
+    <div class="field">
+      <label>Foto do card (miniatura)</label>
+      <div class="photo-upload-row">
+        <div class="photo-upload-area">
+          <input type="file" id="ef_cardImgFile" accept="image/*" onchange="handleCardImgUpload(event)">
+          <label for="ef_cardImgFile" class="photo-upload-label">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <strong>Upload da foto</strong><span>Clique para selecionar</span>
+          </label>
+          <input type="url" id="ef_cardImage" value="${esc(p.cardImage||'')}" placeholder="Ou cole URL aqui" style="margin-top:.5rem;">
+        </div>
+        <div class="photo-size-hint"><strong>📐 Tamanho ideal</strong><p>• <b>600 × 400 px</b><br>• Proporção 3:2<br>• JPG ou WebP<br>• Máx. 300 KB</p></div>
+      </div>
+      ${p.cardImage?`<img src="${esc(p.cardImage)}" id="ef_cardPreview" style="height:56px;border-radius:8px;margin-top:.5rem;border:2px solid var(--rose-light);object-fit:cover;">`:'<div id="ef_cardPreview"></div>'}
+    </div>
+    <hr class="divider">
+    <div class="field">
+      <label>Fotos da galeria (modal)</label>
+      <div class="photo-upload-row">
+        <div class="photo-upload-area">
+          <input type="file" id="ef_galleryFiles" accept="image/*" multiple onchange="handleGalleryUpload(event)">
+          <label for="ef_galleryFiles" class="photo-upload-label">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <strong>Upload de fotos</strong><span>Pode selecionar várias</span>
+          </label>
+          <input type="url" id="ef_galleryUrlAdd" placeholder="Ou cole URL e pressione Enter" style="margin-top:.5rem;" onkeydown="if(event.key==='Enter'){addGalleryUrl();event.preventDefault();}">
+          <button class="btn btn-secondary btn-sm" style="margin-top:.4rem;" onclick="addGalleryUrl()">+ Adicionar URL</button>
+        </div>
+        <div class="photo-size-hint"><strong>📐 Tamanho ideal</strong><p>• <b>800 × 1100 px</b><br>• Proporção retrato 3:4<br>• JPG ou WebP<br>• Máx. 500 KB cada</p></div>
+      </div>
+      <div class="photo-preview-wrap" id="ef_galleryPreviews"></div>
+    </div>
+    <hr class="divider">
+    <div class="field"><label>Rótulo da seção de preços</label><input type="text" id="ef_pricesLabel" value="${esc(p.pricesLabel||'Preços e Sabores')}"></div>
+    <div class="field">
+      <label>Sabores / Preços</label>
+      <div id="ef_pricesContainer"></div>
+      <div class="add-btn-row"><button class="btn btn-secondary btn-sm" onclick="addPriceRow()"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar</button></div>
+    </div>
+    <div class="field">
+      <label>Massas disponíveis <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+      <div class="tags-editor" id="ef_doughsTags"></div>
+      <div class="tag-add-row"><input type="text" id="ef_doughInput" placeholder="Ex: Baunilha" onkeydown="if(event.key==='Enter'){addTag('doughs');event.preventDefault();}"><button class="btn btn-secondary btn-sm" onclick="addTag('doughs')">+</button></div>
+    </div>
+    <div class="field">
+      <label>Recheios disponíveis <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+      <div class="tags-editor" id="ef_fillingsTags"></div>
+      <div class="tag-add-row"><input type="text" id="ef_fillingsInput" placeholder="Ex: Ninho gourmet" onkeydown="if(event.key==='Enter'){addTag('fillings');event.preventDefault();}"><button class="btn btn-secondary btn-sm" onclick="addTag('fillings')">+</button></div>
+    </div>
+    <div class="field"><label>Observações</label><textarea id="ef_observations" rows="2">${esc(p.observations||'')}</textarea></div>
+    <hr class="divider">
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeEditPanel()">Cancelar</button>
+      <button class="btn btn-primary" id="saveProductBtn" onclick="saveProduct()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+        Salvar item
+      </button>
+    </div>`;
+  renderGalleryPreviews(); renderPriceRows(); renderTags('doughs'); renderTags('fillings');
+  document.getElementById('ef_cardImage').addEventListener('input', function() {
+    const prev=document.getElementById('ef_cardPreview');
+    if(prev&&this.value){prev.src=this.value;prev.style.display='block';}
+  });
+}
+
+window.handleGalleryUpload = function(e) {
+  Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{editImgs.push(ev.target.result);renderGalleryPreviews();};r.readAsDataURL(f);});
+};
+window.addGalleryUrl = function() {
+  const i=document.getElementById('ef_galleryUrlAdd');
+  if(i&&i.value.trim()){editImgs.push(i.value.trim());i.value='';renderGalleryPreviews();}
+};
+window.removeGalleryImg = function(i) { editImgs.splice(i,1); renderGalleryPreviews(); };
+function renderGalleryPreviews() {
+  const w=document.getElementById('ef_galleryPreviews'); if(!w) return;
+  w.innerHTML=editImgs.map((u,i)=>`<div class="photo-preview-item"><img src="${u}" onerror="this.style.background='var(--rose-pale)'"><button class="remove-photo" onclick="removeGalleryImg(${i})">✕</button></div>`).join('');
+}
+window.handleCardImgUpload = function(e) {
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{document.getElementById('ef_cardImage').value=ev.target.result;const p=document.getElementById('ef_cardPreview');if(p){p.src=ev.target.result;p.style.display='block';}};
+  r.readAsDataURL(f);
+};
+window.addPriceRow = function() { editPrices.push({flavor:'',price:''}); renderPriceRows(); };
+window.removePriceRow = function(i) { editPrices.splice(i,1); renderPriceRows(); };
+function renderPriceRows() {
+  const c=document.getElementById('ef_pricesContainer'); if(!c) return;
+  c.innerHTML=editPrices.map((p,i)=>`<div class="price-row"><input type="text" value="${esc(p.flavor)}" placeholder="Sabor / Nome" oninput="editPrices[${i}].flavor=this.value"><input type="text" value="${esc(p.price)}" placeholder="Preço" style="max-width:130px;" oninput="editPrices[${i}].price=this.value"><button class="btn btn-danger btn-sm" onclick="removePriceRow(${i})">✕</button></div>`).join('');
+}
+window.addTag = function(type) {
+  const id=type==='doughs'?'ef_doughInput':'ef_fillingsInput';
+  const input=document.getElementById(id); if(!input||!input.value.trim()) return;
+  if(type==='doughs') editDoughs.push(input.value.trim()); else editFillings.push(input.value.trim());
+  input.value=''; renderTags(type);
+};
+window.removeTag = function(type,i) {
+  if(type==='doughs') editDoughs.splice(i,1); else editFillings.splice(i,1); renderTags(type);
+};
+function renderTags(type) {
+  const arr=type==='doughs'?editDoughs:editFillings;
+  const el=document.getElementById(`ef_${type}Tags`); if(!el) return;
+  el.innerHTML=arr.map((t,i)=>`<span class="tag-pill">${esc(t)} <button onclick="removeTag('${type}',${i})">✕</button></span>`).join('');
+}
+window.saveProduct = async function() {
+  const title=document.getElementById('ef_title').value.trim();
+  if(!title){showToast('Preencha o nome do item','error');return;}
+  const btn=document.getElementById('saveProductBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner-inline"></span> Salvando...';
+  const pd={
+    id: editIdx!==null?appData.products[editIdx].id:'item_'+Date.now(),
+    title, badge:document.getElementById('ef_badge').value.trim(),
+    shortDesc:document.getElementById('ef_shortdesc').value.trim(),
+    description:document.getElementById('ef_description').value.trim(),
+    cardImage:document.getElementById('ef_cardImage').value.trim(),
+    images:[...editImgs],
+    pricesLabel:document.getElementById('ef_pricesLabel').value.trim()||'Preços e Sabores',
+    prices:editPrices.filter(p=>p.flavor),
+    doughs:[...editDoughs], fillings:[...editFillings],
+    observations:document.getElementById('ef_observations').value.trim()
+  };
+  if(editIdx!==null) appData.products[editIdx]=pd; else appData.products.push(pd);
+  try {
+    await saveToFirestore({products:appData.products});
+    renderProductList(); closeEditPanel(); showToast('Item salvo! ✓','success');
+  } catch(e) { btn.disabled=false; btn.innerHTML='Salvar item'; }
+};
+window.confirmDeleteProduct = function(i) {
+  document.getElementById('confirmTitle').textContent='Excluir item';
+  document.getElementById('confirmText').textContent=`Excluir "${appData.products[i].title}"? Esta ação não pode ser desfeita.`;
+  document.getElementById('confirmOkBtn').onclick=async()=>{
+    appData.products.splice(i,1);
+    await saveToFirestore({products:appData.products});
+    renderProductList(); closeConfirm(); showToast('Item excluído','success');
+  };
+  document.getElementById('confirmOverlay').classList.add('open');
+};
+
+// ── LOGO ──
+function renderLogoPanel() {
+  const el=document.getElementById('currentLogoPreview');
+  if(el) el.src=appData.logo||DEFAULT.logo;
+}
+window.handleLogoUpload = function(e) {
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{document.getElementById('logoNewImg').src=ev.target.result;document.getElementById('logoNewPreview').style.display='block';document.getElementById('logoUrlInput').value=ev.target.result;};
+  r.readAsDataURL(f);
+};
+window.saveLogo = async function() {
+  const url=document.getElementById('logoUrlInput').value.trim();
+  if(!url){showToast('Selecione ou cole a URL do logo','error');return;}
+  appData.logo=url;
+  await saveToFirestore({logo:url});
+  renderLogoPanel(); showToast('Logo salvo! ✓','success');
+};
+
+// ── CONTATOS ──
+function renderContatosPanel() {
+  const c=appData.contatos||DEFAULT.contatos;
+  document.getElementById('contactWpp').value=c.wppNumber||'';
+  document.getElementById('contactWppDisplay').value=c.wppDisplay||'';
+  document.getElementById('contactIg').value=c.instagram||'';
+}
+window.saveContatos = async function() {
+  appData.contatos={wppNumber:document.getElementById('contactWpp').value.trim(),wppDisplay:document.getElementById('contactWppDisplay').value.trim(),instagram:document.getElementById('contactIg').value.trim()};
+  await saveToFirestore({contatos:appData.contatos});
+  showToast('Contatos salvos! ✓','success');
+};
+
+// ── INFO ──
+function renderInfoPanel() {
+  const c=document.getElementById('infoItemsContainer');
+  c.innerHTML=(appData.info||[]).map((item,i)=>`<div class="price-row"><input type="text" value="${esc(item)}" placeholder="Ex: Encomenda com 50% de entrada" oninput="appData.info[${i}]=this.value"><button class="btn btn-danger btn-sm" onclick="removeInfoItem(${i})">✕</button></div>`).join('');
+}
+window.addInfoItem = function() {
+  if(!appData.info) appData.info=[];
+  appData.info.push(''); renderInfoPanel();
+  const rows=document.querySelectorAll('#infoItemsContainer .price-row input');
+  if(rows.length) rows[rows.length-1].focus();
+};
+window.removeInfoItem = function(i) { appData.info.splice(i,1); renderInfoPanel(); };
+window.saveInfo = async function() {
+  appData.info=(appData.info||[]).filter(i=>i.trim());
+  await saveToFirestore({info:appData.info});
+  renderInfoPanel(); showToast('Informações salvas! ✓','success');
+};
+
+// ── CONFIRM / TOAST / UTILS ──
+window.closeConfirm = ()=>document.getElementById('confirmOverlay').classList.remove('open');
+let toastTimer;
+window.showToast = function(msg,type='success') {
+  const t=document.getElementById('toast'),ic=document.getElementById('toastIcon');
+  document.getElementById('toastMsg').textContent=msg;
+  t.className='toast show '+type;
+  ic.innerHTML=type==='success'?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+};
+window.esc = s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){window.closeEditPanel();window.closeConfirm();}});
+</script>
+</body>
+</html>
