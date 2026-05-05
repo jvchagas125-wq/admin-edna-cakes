@@ -248,10 +248,16 @@
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
                 Itens do Cardápio
               </div>
-              <button class="btn btn-primary" onclick="openNewProduct()">
-                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Novo item
-              </button>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="confirmResetDefaults()" title="Restaurar dados padrão">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                  Restaurar padrão
+                </button>
+                <button class="btn btn-primary" onclick="openNewProduct()">
+                  <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Novo item
+                </button>
+              </div>
             </div>
             <p class="section-subtitle">Clique em "Editar" para alterar fotos, preços, sabores e descrição.</p>
             <div id="productListContainer"><div class="empty-state"><span class="spinner-inline"></span> Carregando...</div></div>
@@ -506,16 +512,27 @@ async function loadData() {
   }
 }
 
+// Remove undefined/function values that break Firestore
+function cleanForFirestore(obj) {
+  return JSON.parse(JSON.stringify(obj, (key, val) => {
+    if (val === undefined || typeof val === 'function') return null;
+    return val;
+  }));
+}
+
 async function saveToFirestore(patch) {
   setSaveStatus('saving');
   try {
-    await setDoc(DOCREF(), patch, { merge: true });
-    Object.assign(appData, patch);
+    const clean = cleanForFirestore(patch);
+    console.log('[Admin] Saving to Firestore:', JSON.stringify(clean).substring(0, 200) + '...');
+    await setDoc(DOCREF(), clean, { merge: true });
+    Object.assign(appData, clean);
     setSaveStatus('saved');
+    console.log('[Admin] Save successful!');
   } catch(e) {
-    console.error('saveToFirestore error:', e);
+    console.error('[Admin] saveToFirestore FAILED:', e.code, e.message, e);
     setSaveStatus('');
-    showToast('Erro ao salvar: ' + (e.code || e.message || 'verifique a conexao.'), 'error');
+    showToast('Erro ao salvar: ' + (e.code || e.message || 'sem conexão'), 'error');
     throw e;
   }
 }
@@ -929,6 +946,23 @@ window.saveInfo = async function() {
 };
 
 // ── CONFIRM / TOAST / UTILS ──
+window.confirmResetDefaults = function() {
+  document.getElementById('confirmTitle').textContent = 'Restaurar dados padrão';
+  document.getElementById('confirmText').textContent = 'Isso vai sobrescrever todos os itens do cardápio com os dados originais. Tem certeza?';
+  document.getElementById('confirmOkBtn').textContent = 'Restaurar';
+  document.getElementById('confirmOkBtn').onclick = async () => {
+    appData.products = JSON.parse(JSON.stringify(DEFAULT.products));
+    try {
+      await saveToFirestore({ products: appData.products });
+      renderProductList();
+      closeConfirm();
+      showToast('Dados restaurados com sucesso! ✓', 'success');
+    } catch(e) {
+      closeConfirm();
+    }
+  };
+  document.getElementById('confirmOverlay').classList.add('open');
+};
 window.closeConfirm = ()=>document.getElementById('confirmOverlay').classList.remove('open');
 let toastTimer;
 window.showToast = function(msg,type='success') {
