@@ -438,6 +438,11 @@
                 <input type="text" id="especialDesc" placeholder="Ex: Encomendas abertas até 20 de dezembro!">
               </div>
               <div class="field">
+                <label>💬 Mensagem do WhatsApp</label>
+                <input type="text" id="especialMensagemWpp" placeholder="Ex: Olá, eu desejo realizar uma encomenda do Cardápio de Natal!">
+                <p style="font-size:.75rem;color:var(--text-muted);margin-top:.3rem;">Texto que aparece pré-preenchido quando o cliente clica em "Fazer encomenda". Se vazio, usa o padrão automático.</p>
+              </div>
+              <div class="field">
                 <label>Cor do banner</label>
                 <div style="display:flex;gap:.75rem;flex-wrap:wrap;" id="especialCorOptions">
                   <label class="cor-option" onclick="selectCor('rose')"><input type="radio" name="especial_cor" value="rose" checked> <span style="background:linear-gradient(135deg,#e8607a,#c94060);" class="cor-swatch"></span> Rosa</label>
@@ -1121,6 +1126,8 @@ function renderEspecialPanel() {
   document.getElementById('especialTitulo').value = e.titulo || '';
   document.getElementById('especialDesc').value = e.descricao || '';
   document.getElementById('especialValidade').value = e.validade || '';
+  const mwpp = document.getElementById('especialMensagemWpp');
+  if (mwpp) mwpp.value = e.mensagemWpp || '';
   // Set color radio
   const cor = e.cor || 'rose';
   const radio = document.querySelector(`input[name="especial_cor"][value="${cor}"]`);
@@ -1246,11 +1253,13 @@ function renderEspecialItens() {
 
 window.saveEspecial = async function() {
   const cor = document.querySelector('input[name="especial_cor"]:checked')?.value || 'rose';
+  const mwppEl = document.getElementById('especialMensagemWpp');
   const especial = {
     ativo: document.getElementById('especialAtivo').checked,
     titulo: document.getElementById('especialTitulo').value.trim(),
     descricao: document.getElementById('especialDesc').value.trim(),
     validade: document.getElementById('especialValidade').value,
+    mensagemWpp: mwppEl ? mwppEl.value.trim() : '',
     cor,
     itens: window.especialItens
       .filter(i => i.nome && i.nome.trim())
