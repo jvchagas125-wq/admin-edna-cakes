@@ -608,18 +608,22 @@ async function loadData() {
 }
 
 // Real-time listener — keeps admin in sync if data changes elsewhere
+let _syncPaused = false; // pause sync while user is actively editing
+
 function startRealtimeSync() {
   onSnapshot(DOCREF(), (snap) => {
     if (!snap.exists()) return;
     const saved = snap.data();
-    // Update appData silently
+    // Always update appData
     appData.logo      = saved.logo      || DEFAULT.logo;
     appData.favicon   = saved.favicon   || '';
     appData.contatos  = saved.contatos  || DEFAULT.contatos;
     appData.info      = saved.info      || DEFAULT.info;
     appData.products  = (saved.products && saved.products.length) ? saved.products : DEFAULT.products;
     appData.especial  = saved.especial  || {};
-    // Re-render whichever panel is currently active
+    console.log('[Admin] Sync received. especial itens:', (appData.especial.itens||[]).length);
+    // Don't re-render if user is editing (paused) or if especial panel is active with edits
+    if (_syncPaused) return;
     const activePanel = document.querySelector('.panel.active');
     if (!activePanel) return;
     const panelId = activePanel.id;
@@ -627,7 +631,8 @@ function startRealtimeSync() {
     if (panelId === 'panel-logo')      renderLogoPanel();
     if (panelId === 'panel-contatos')  renderContatosPanel();
     if (panelId === 'panel-info')      renderInfoPanel();
-    if (panelId === 'panel-especial')  renderEspecialPanel();
+    // For especial panel: only auto-refresh if user hasn't started editing
+    if (panelId === 'panel-especial' && window.especialItens.length === 0) renderEspecialPanel();
   }, (err) => {
     console.warn('[Admin] Realtime sync error:', err.code);
   });
@@ -1188,6 +1193,7 @@ window.addEspecialItem = function(type) {
   } else {
     window.especialItens.push({ nome:'', descricao:'', foto:'', preco:'' });
   }
+  _syncPaused = true; // pause auto-refresh while user is editing
   renderEspecialItens();
   setTimeout(() => {
     const cards = document.querySelectorAll('.especial-item-card');
@@ -1288,6 +1294,7 @@ function renderEspecialItens() {
 }
 
 window.saveEspecial = async function() {
+  _syncPaused = false; // allow sync again after save
   const cor = document.querySelector('input[name="especial_cor"]:checked')?.value || 'rose';
   const mwppEl = document.getElementById('especialMensagemWpp');
   const especial = {
@@ -1309,7 +1316,11 @@ window.saveEspecial = async function() {
       }))
   };
   appData.especial = especial;
+  console.log('[Admin] Saving especial. itens:', especial.itens.length);
   await saveToFirestore({ especial });
+  // Re-render with saved data to confirm persistence
+  window.especialItens = JSON.parse(JSON.stringify(especial.itens));
+  renderEspecialItens();
   showToast('Cardápio especial salvo! ✓', 'success');
 };
 </script>
