@@ -512,7 +512,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc }
+import { getFirestore, doc, getDoc, setDoc, onSnapshot }
   from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -574,12 +574,17 @@ async function loadData() {
     const snap = await getDoc(DOCREF());
     if (snap.exists()) {
       const saved = snap.data();
+      // Load ALL fields — including especial, favicon, siteTitle
       appData = {
-        logo:     saved.logo     || DEFAULT.logo,
-        contatos: saved.contatos || DEFAULT.contatos,
-        info:     saved.info     || DEFAULT.info,
-        products: (saved.products && saved.products.length) ? saved.products : DEFAULT.products
+        logo:      saved.logo      || DEFAULT.logo,
+        favicon:   saved.favicon   || '',
+        siteTitle: saved.siteTitle || '',
+        contatos:  saved.contatos  || DEFAULT.contatos,
+        info:      saved.info      || DEFAULT.info,
+        products:  (saved.products && saved.products.length) ? saved.products : DEFAULT.products,
+        especial:  saved.especial  || {}
       };
+      console.log('[Admin] Data loaded from Firestore. especial:', JSON.stringify(appData.especial).substring(0,100));
     } else {
       await setDoc(DOCREF(), DEFAULT, { merge: true });
       appData = JSON.parse(JSON.stringify(DEFAULT));
@@ -587,8 +592,34 @@ async function loadData() {
   } catch(e) {
     console.error('loadData error:', e);
     appData = JSON.parse(JSON.stringify(DEFAULT));
-    setTimeout(() => showToast('Aviso: usando dados padrao. Verifique as regras do Firestore.', 'error'), 500);
+    setTimeout(() => showToast('Aviso: usando dados padrão.', 'error'), 500);
   }
+}
+
+// Real-time listener — keeps admin in sync if data changes elsewhere
+function startRealtimeSync() {
+  onSnapshot(DOCREF(), (snap) => {
+    if (!snap.exists()) return;
+    const saved = snap.data();
+    // Update appData silently
+    appData.logo      = saved.logo      || DEFAULT.logo;
+    appData.favicon   = saved.favicon   || '';
+    appData.contatos  = saved.contatos  || DEFAULT.contatos;
+    appData.info      = saved.info      || DEFAULT.info;
+    appData.products  = (saved.products && saved.products.length) ? saved.products : DEFAULT.products;
+    appData.especial  = saved.especial  || {};
+    // Re-render whichever panel is currently active
+    const activePanel = document.querySelector('.panel.active');
+    if (!activePanel) return;
+    const panelId = activePanel.id;
+    if (panelId === 'panel-cardapio')  renderProductList();
+    if (panelId === 'panel-logo')      renderLogoPanel();
+    if (panelId === 'panel-contatos')  renderContatosPanel();
+    if (panelId === 'panel-info')      renderInfoPanel();
+    if (panelId === 'panel-especial')  renderEspecialPanel();
+  }, (err) => {
+    console.warn('[Admin] Realtime sync error:', err.code);
+  });
 }
 
 // Remove undefined/function values that break Firestore
@@ -605,7 +636,9 @@ async function saveToFirestore(patch) {
     const clean = cleanForFirestore(patch);
     console.log('[Admin] Saving to Firestore:', JSON.stringify(clean).substring(0, 200) + '...');
     await setDoc(DOCREF(), clean, { merge: true });
+    // Deep merge especial field
     Object.assign(appData, clean);
+    if (clean.especial) appData.especial = clean.especial;
     setSaveStatus('saved');
     console.log('[Admin] Save successful!');
   } catch(e) {
@@ -631,6 +664,7 @@ onAuthStateChanged(auth, async user => {
     await loadData();
     document.getElementById('adminApp').style.display = 'block';
     initAdmin();
+    startRealtimeSync();
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
   }
@@ -1107,9 +1141,9 @@ window.selectCor = function(cor) {
 
 window.addEspecialItem = function(type) {
   if (type === 'variant') {
-    window.window.especialItens.push({ nome:'', descricao:'', foto:'', variants:[{name:'',price:''},{name:'',price:''}] });
+    window.especialItens.push({ nome:'', descricao:'', foto:'', variants:[{name:'',price:''},{name:'',price:''}] });
   } else {
-    window.window.especialItens.push({ nome:'', descricao:'', foto:'', preco:'' });
+    window.especialItens.push({ nome:'', descricao:'', foto:'', preco:'' });
   }
   renderEspecialItens();
   setTimeout(() => {
@@ -1119,13 +1153,13 @@ window.addEspecialItem = function(type) {
 };
 
 window.removeEspecialItem = function(i) {
-  window.window.especialItens.splice(i, 1);
+  window.especialItens.splice(i, 1);
   renderEspecialItens();
 };
 
 window.addEspecialVariant = function(i) {
   if (!window.especialItens[i].variants) window.especialItens[i].variants = [];
-  window.especialItens[i].variants.push({name:'', price:''});
+  window.especialItens[i].variants.push({name: '', price: ''});
   renderEspecialItens();
 };
 
@@ -1152,11 +1186,11 @@ window.handleEspecialItemPhoto = async function(i, input) {
 function renderEspecialItens() {
   const c = document.getElementById('especialItensContainer');
   if (!c) return;
-  if (!window.window.especialItens.length) {
+  if (!window.especialItens.length) {
     c.innerHTML = '<div class="empty-state" style="padding:1.5rem;">Nenhum item. Use os botões acima para adicionar.</div>';
     return;
   }
-  c.innerHTML = window.window.especialItens.map((item, i) => {
+  c.innerHTML = window.especialItens.map((item, i) => {
     const photoBlock = `
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
         ${item.foto ? `<img src="${esc(item.foto)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid var(--rose-light);">` : ''}
