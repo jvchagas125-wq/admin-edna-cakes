@@ -1211,7 +1211,15 @@ window.saveEspecial = async function() {
     descricao: document.getElementById('especialDesc').value.trim(),
     validade: document.getElementById('especialValidade').value,
     cor,
-    itens: especialItens.filter(i => i.nome.trim())
+    itens: especialItens
+      .filter(i => i.nome && i.nome.trim())
+      .map(i => ({
+        nome: i.nome || '',
+        descricao: i.descricao || '',
+        foto: i.foto || '',
+        preco: i.preco || '',
+        variants: (i.variants || []).map(v => ({ name: v.name||'', price: v.price||'' }))
+      }))
   };
   appData.especial = especial;
   await saveToFirestore({ especial });
