@@ -1192,14 +1192,21 @@ function renderEspecialItens() {
   }
   c.innerHTML = window.especialItens.map((item, i) => {
     const photoBlock = `
-      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
-        ${item.foto ? `<img src="${esc(item.foto)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid var(--rose-light);">` : ''}
-        <div>
+      <div style="display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.75rem;background:var(--rose-pale);border:1.5px dashed rgba(232,96,122,.3);border-radius:10px;padding:.75rem;">
+        ${item.foto
+          ? `<img src="${esc(item.foto)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--rose-light);flex-shrink:0;">`
+          : `<div style="width:80px;height:80px;border-radius:8px;background:white;border:2px dashed var(--rose-light);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">📷</div>`
+        }
+        <div style="flex:1;">
           <input type="file" id="especial_foto_input_${i}" accept="image/*" style="display:none;" onchange="handleEspecialItemPhoto(${i},this)">
-          <label id="especial_foto_label_${i}" for="especial_foto_input_${i}" class="btn btn-secondary btn-sm" style="cursor:pointer;">
-            📷 ${item.foto ? 'Trocar foto' : 'Adicionar foto'}
+          <label id="especial_foto_label_${i}" for="especial_foto_input_${i}" class="btn btn-secondary btn-sm" style="cursor:pointer;display:inline-flex;">
+            📷 ${item.foto ? 'Trocar foto' : 'Fazer upload da foto'}
           </label>
           ${item.foto ? `<button class="btn btn-danger btn-sm" style="margin-left:.4rem;" onclick="window.especialItens[${i}].foto='';renderEspecialItens()">✕ Remover</button>` : ''}
+          <div style="margin-top:.5rem;font-size:.73rem;color:var(--text-muted);line-height:1.5;">
+            📐 <b>Tamanho ideal:</b> <b>300 × 300 px</b><br>
+            Proporção quadrada (1:1) · JPG ou WebP · Máx. 200 KB
+          </div>
         </div>
       </div>`;
 
