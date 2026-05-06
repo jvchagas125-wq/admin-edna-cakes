@@ -474,16 +474,18 @@ async function uploadToCloudinary(file, folder = 'edna-cakes') {
   const fd = new FormData();
   fd.append('file', file);
   fd.append('upload_preset', CLOUDINARY_PRESET);
-  fd.append('api_key', CLOUDINARY_API_KEY);
   fd.append('folder', folder);
-  // Use f_auto,q_auto for automatic format and quality optimization
-  fd.append('transformation', 'f_auto,q_auto');
+  // Note: api_key and transformation not sent — incompatible with unsigned preset
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
     method: 'POST', body: fd
   });
-  if (!res.ok) throw new Error('Cloudinary upload failed: ' + res.status);
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('[Cloudinary] Upload error:', res.status, errText);
+    throw new Error('Upload falhou (' + res.status + '): ' + errText.substring(0, 100));
+  }
   const data = await res.json();
-  // Return optimized URL with auto format and quality
+  // Apply f_auto,q_auto via URL transformation for optimized delivery
   return data.secure_url.replace('/upload/', '/upload/f_auto,q_auto/');
 }
 
