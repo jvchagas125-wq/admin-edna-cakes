@@ -212,6 +212,11 @@
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           Informações
         </div>
+        <div class="nav-label" style="margin-top:.5rem;">Promoções</div>
+        <div class="nav-item" onclick="showPanel('especial',this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Cardápio Especial
+        </div>
       </nav>
       <div class="sidebar-footer">
         <div class="user-info" id="userEmail"></div>
@@ -398,6 +403,72 @@
             </button>
           </div>
         </div>
+
+        <!-- ESPECIAL -->
+        <div class="panel" id="panel-especial">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Cardápio Especial
+              </div>
+              <label class="especial-toggle">
+                <input type="checkbox" id="especialAtivo" onchange="toggleEspecial(this.checked)">
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+                <span id="especialToggleLabel" style="font-size:.85rem;font-weight:600;color:var(--text-muted);margin-left:.4rem;">Desativado</span>
+              </label>
+            </div>
+            <p class="section-subtitle">Crie um cardápio especial para datas comemorativas como Natal, Dia das Mães, Páscoa, etc. Quando ativado, aparece em destaque no site do cliente.</p>
+
+            <div id="especialFields">
+              <div class="grid-2">
+                <div class="field">
+                  <label>Nome do evento</label>
+                  <input type="text" id="especialTitulo" placeholder="Ex: Cardápio de Natal 🎄">
+                </div>
+                <div class="field">
+                  <label>Válido até (opcional)</label>
+                  <input type="date" id="especialValidade">
+                </div>
+              </div>
+              <div class="field">
+                <label>Descrição / subtítulo</label>
+                <input type="text" id="especialDesc" placeholder="Ex: Encomendas abertas até 20 de dezembro!">
+              </div>
+              <div class="field">
+                <label>Cor do banner</label>
+                <div style="display:flex;gap:.75rem;flex-wrap:wrap;" id="especialCorOptions">
+                  <label class="cor-option" onclick="selectCor('rose')"><input type="radio" name="especial_cor" value="rose" checked> <span style="background:linear-gradient(135deg,#e8607a,#c94060);" class="cor-swatch"></span> Rosa</label>
+                  <label class="cor-option" onclick="selectCor('gold')"><input type="radio" name="especial_cor" value="gold"> <span style="background:linear-gradient(135deg,#c8975a,#a0722a);" class="cor-swatch"></span> Dourado</label>
+                  <label class="cor-option" onclick="selectCor('green')"><input type="radio" name="especial_cor" value="green"> <span style="background:linear-gradient(135deg,#16a34a,#15803d);" class="cor-swatch"></span> Verde</label>
+                  <label class="cor-option" onclick="selectCor('purple')"><input type="radio" name="especial_cor" value="purple"> <span style="background:linear-gradient(135deg,#7c3aed,#5b21b6);" class="cor-swatch"></span> Roxo</label>
+                  <label class="cor-option" onclick="selectCor('red')"><input type="radio" name="especial_cor" value="red"> <span style="background:linear-gradient(135deg,#dc2626,#b91c1c);" class="cor-swatch"></span> Vermelho</label>
+                </div>
+              </div>
+
+              <hr class="divider">
+
+              <div class="card-header" style="margin-bottom:.75rem;">
+                <div style="font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--text);">Itens do cardápio especial</div>
+                <button class="btn btn-primary btn-sm" onclick="addEspecialItem()">
+                  <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Adicionar item
+                </button>
+              </div>
+              <p class="section-subtitle" style="margin-top:-.5rem;">Adicione os produtos do cardápio especial com nome, descrição e preço.</p>
+              <div id="especialItensContainer"></div>
+            </div>
+
+            <hr class="divider">
+            <button class="btn btn-primary" onclick="saveEspecial()">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Salvar cardápio especial
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -582,10 +653,10 @@ document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key
 document.getElementById('loginEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPass').focus(); });
 
 // ── INIT ──
-function initAdmin() { renderProductList(); renderLogoPanel(); renderContatosPanel(); renderInfoPanel(); }
+function initAdmin() { renderProductList(); renderLogoPanel(); renderContatosPanel(); renderInfoPanel(); renderEspecialPanel(); }
 
 // ── NAV ──
-const titles = { cardapio:'Cardápio', logo:'Logo da Marca', contatos:'Contatos', info:'Informações' };
+const titles = { cardapio:'Cardápio', logo:'Logo da Marca', contatos:'Contatos', info:'Informações', especial:'Cardápio Especial' };
 window.showPanel = function(name, el) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -982,6 +1053,92 @@ window.showToast = function(msg,type='success') {
 };
 window.esc = s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){window.closeEditPanel();window.closeConfirm();}});
+
+// ── ESPECIAL ──
+let especialItens = [];
+
+const COR_MAP = {
+  rose:   { bg:'linear-gradient(135deg,#e8607a,#c94060)', text:'#fff', accent:'#fdf0f2' },
+  gold:   { bg:'linear-gradient(135deg,#c8975a,#a0722a)', text:'#fff', accent:'#fef9f0' },
+  green:  { bg:'linear-gradient(135deg,#16a34a,#15803d)', text:'#fff', accent:'#f0fdf4' },
+  purple: { bg:'linear-gradient(135deg,#7c3aed,#5b21b6)', text:'#fff', accent:'#f5f3ff' },
+  red:    { bg:'linear-gradient(135deg,#dc2626,#b91c1c)', text:'#fff', accent:'#fef2f2' }
+};
+
+function renderEspecialPanel() {
+  const e = appData.especial || {};
+  document.getElementById('especialAtivo').checked = !!e.ativo;
+  document.getElementById('especialToggleLabel').textContent = e.ativo ? 'Ativado' : 'Desativado';
+  document.getElementById('especialToggleLabel').style.color = e.ativo ? 'var(--rose)' : 'var(--text-muted)';
+  document.getElementById('especialTitulo').value = e.titulo || '';
+  document.getElementById('especialDesc').value = e.descricao || '';
+  document.getElementById('especialValidade').value = e.validade || '';
+  // Set color radio
+  const cor = e.cor || 'rose';
+  const radio = document.querySelector(`input[name="especial_cor"][value="${cor}"]`);
+  if (radio) radio.checked = true;
+  especialItens = JSON.parse(JSON.stringify(e.itens || []));
+  renderEspecialItens();
+}
+
+window.toggleEspecial = function(checked) {
+  document.getElementById('especialToggleLabel').textContent = checked ? 'Ativado' : 'Desativado';
+  document.getElementById('especialToggleLabel').style.color = checked ? 'var(--rose)' : 'var(--text-muted)';
+};
+
+window.selectCor = function(cor) {
+  const radio = document.querySelector(`input[name="especial_cor"][value="${cor}"]`);
+  if (radio) radio.checked = true;
+};
+
+window.addEspecialItem = function() {
+  especialItens.push({ nome:'', descricao:'', preco:'' });
+  renderEspecialItens();
+  // Focus last item
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.especial-item-card input');
+    if (inputs.length) inputs[inputs.length - 3].focus();
+  }, 50);
+};
+
+window.removeEspecialItem = function(i) {
+  especialItens.splice(i, 1);
+  renderEspecialItens();
+};
+
+function renderEspecialItens() {
+  const c = document.getElementById('especialItensContainer');
+  if (!c) return;
+  if (!especialItens.length) {
+    c.innerHTML = '<div class="empty-state" style="padding:1.5rem;">Nenhum item adicionado. Clique em "Adicionar item".</div>';
+    return;
+  }
+  c.innerHTML = especialItens.map((item, i) => `
+    <div class="especial-item-card">
+      <div class="especial-item-row" style="margin-bottom:.5rem;">
+        <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" oninput="especialItens[${i}].nome=this.value" style="flex:2;">
+        <input type="text" value="${esc(item.preco)}" placeholder="Preço (ex: R$ 45,00)" oninput="especialItens[${i}].preco=this.value" style="max-width:140px;">
+        <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
+      </div>
+      <input type="text" value="${esc(item.descricao)}" placeholder="Descrição breve (ex: Recheado com brigadeiro gourmet)" oninput="especialItens[${i}].descricao=this.value" style="width:100%;">
+    </div>
+  `).join('');
+}
+
+window.saveEspecial = async function() {
+  const cor = document.querySelector('input[name="especial_cor"]:checked')?.value || 'rose';
+  const especial = {
+    ativo: document.getElementById('especialAtivo').checked,
+    titulo: document.getElementById('especialTitulo').value.trim(),
+    descricao: document.getElementById('especialDesc').value.trim(),
+    validade: document.getElementById('especialValidade').value,
+    cor,
+    itens: especialItens.filter(i => i.nome.trim())
+  };
+  appData.especial = especial;
+  await saveToFirestore({ especial });
+  showToast('Cardápio especial salvo! ✓', 'success');
+};
 </script>
 </body>
 </html>
