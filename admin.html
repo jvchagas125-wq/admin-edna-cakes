@@ -542,9 +542,9 @@ const DOCREF = () => doc(db, 'site', 'dados');
 const DEFAULT = {
   logo: 'https://i.imgur.com/F6PR9Bu.png',
   contatos: { wppNumber:'5522996079822', wppDisplay:'(22) 99607-9822', instagram:'edna_cakes024' },
-  info: ['Encomenda mediante entrada de 50%.','Topper não incluso no valor.','Taxa de entrega: R$10,00.','Encomendas somente na região de Campos dos Goytacazes (Pelo Whatsapp).'],
+  info: ['Encomenda mediante entrada de 50%.','Topper não incluso no valor.','Taxa de entrega: R$10,00.','Encomendas somente pelo WhatsApp.'],
   products: [
-    { id:'cupcakes', mensagemWpp:'Olá, eu desejo realizar uma encomenda de Bolo Naked Cake! 🎂', title:'Bolos Naked Cake', badge:'Popular', shortDesc:'Elegantes, personalizáveis e irresistíveis', description:'Bolos elegantes e sofisticados com camadas de bolo e recheio à vista.', cardImage:'https://i.imgur.com/uFrFZGHm.png', images:['https://i.imgur.com/mJ6Krcx.jpeg','https://i.imgur.com/VOE52K6.jpeg','https://i.imgur.com/qI2w05l.jpeg','https://i.imgur.com/0b5QDSW.jpeg','https://i.imgur.com/k91fmpf.jpeg','https://i.imgur.com/EDCtl46.jpeg'], pricesLabel:'Tamanhos e Preços', prices:[{flavor:'15 cm (10–12 fatias)',price:'R$ 120,00'},{flavor:'20 cm (25–30 fatias)',price:'R$ 180,00'},{flavor:'25 cm (35–40 fatias)',price:'R$ 240,00'},{flavor:'30 cm (45–50 fatias)',price:'R$ 290,00'}], doughs:['Baunilha','Chocolate'], fillings:['Ninho gourmet','Brigadeiro de chocolate gourmet','Beijinho gourmet','Doce de leite gourmet','Prestígio','Ninho com Nutella','Ninho com Ouro Branco'], observations:'Pedido mínimo com 48h de antecedência.' },
+    { id:'cupcakes', mensagemWpp:'Olá, eu desejo realizar uma encomenda de Bolo Naked Cake! 🎂', title:'Bolos Naked Cake', badge:'Popular', shortDesc:'Elegantes, personalizáveis e irresistíveis', description:'Bolos elegantes e sofisticados com camadas de bolo e recheio à vista.', cardImage:'https://i.imgur.com/uFrFZGHm.png', images:['https://i.imgur.com/mJ6Krcx.jpeg','https://i.imgur.com/VOE52K6.jpeg','https://i.imgur.com/qI2w05l.jpeg','https://i.imgur.com/0b5QDSW.jpeg','https://i.imgur.com/k91fmpf.jpeg','https://i.imgur.com/EDCtl46.jpeg'], pricesLabel:'Tamanhos e Preços', prices:[{flavor:'15 cm (10–12 fatias)',price:'R$ 120,00'},{flavor:'20 cm (25–30 fatias)',price:'R$ 180,00'},{flavor:'25 cm (35–40 fatias)',price:'R$ 240,00'},{flavor:'30 cm (45–50 fatias)',price:'R$ 290,00'}], doughs:['Baunilha','Chocolate'], fillings:['Ninho gourmet','Brigadeiro de chocolate gourmet','Beijinho gourmet','Doce de leite gourmet','Prestígio','Ninho com Nutella','Ninho com Ouro Branco'], additionals:[{name:'Morango',price:'a partir de R$ 7,00'},{name:'Nutella',price:'a partir de R$ 10,00'},{name:'Nozes',price:'a partir de R$ 10,00'},{name:'Docinhos gourmet',price:'R$ 1,00 a unidade'}], observations:'Pedido mínimo com 48h de antecedência.' },
     { id:'bolos', mensagemWpp:'Olá, eu desejo realizar uma encomenda de Rocambole! 🍰', title:'Rocambole', badge:'', shortDesc:'Doce, macio e irresistível', description:'Rocambole delicioso e macio, recheado com sabores gourmet!', cardImage:'https://i.imgur.com/upiuoy2m.png', images:['https://i.imgur.com/3DHYo7Q.jpeg','https://i.imgur.com/tBAfCzp.jpeg','https://i.imgur.com/hmLo7K6.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Doce de Leite Gourmet',price:'R$ 60,00'},{flavor:'Ninho Gourmet',price:'R$ 60,00'},{flavor:'Brigadeiro de Chocolate Gourmet',price:'R$ 60,00'},{flavor:'Beijinho Gourmet',price:'R$ 60,00'}], observations:'Pedido mínimo: 24h de antecedência.' },
     { id:'brigadeiros', mensagemWpp:'Olá, eu desejo realizar uma encomenda de Brownies! 🍫', title:'Brownie', badge:'', shortDesc:'Sabores exclusivos e tradicionais', description:'Brownies deliciosos com chocolate belga e sabores exclusivos.', cardImage:'https://i.imgur.com/C0x8ygIm.png', images:['https://i.imgur.com/KvXeI1D.jpeg','https://i.imgur.com/XcukGOY.jpeg'], pricesLabel:'Preços e Recheios', prices:[{flavor:'Brigadeiro gourmet',price:'R$ 6,00/unid'},{flavor:'Doce de Leite gourmet',price:'R$ 6,00/unid'},{flavor:'Ninho gourmet',price:'R$ 6,00/unid'}], observations:'Realizar pedidos de no mínimo 5 unidades.' },
     { id:'palhaitaliana', mensagemWpp:'Olá, eu desejo realizar uma encomenda de Palha Italiana! 🍬', title:'Palha Italiana', badge:'', shortDesc:'Irresistível e deliciosa', description:'Palha Italiana irresistível e deliciosa, com recheios maravilhosos.', cardImage:'https://i.imgur.com/1qsbV8Nm.png', images:['https://i.imgur.com/KGE6F4j.jpeg','https://i.imgur.com/fUCRZP9.jpeg','https://i.imgur.com/5y0UeOo.jpeg'], pricesLabel:'Preços e Sabores', prices:[{flavor:'Ninho com Brigadeiro',price:'R$ 7,00/unid'},{flavor:'Ninho com Morango',price:'R$ 7,00/unid'},{flavor:'Ninho com Nutella',price:'R$ 10,00/unid'}], observations:'Mínimo de 5 unidades.' },
@@ -771,7 +771,7 @@ window.closeEditPanel = function() {
 };
 
 function renderEditForm(p) {
-  editImgs=[...(p.images||[])]; window.editPrices=[...(p.prices||[])]; window.editDoughs=[...(p.doughs||[])]; window.editFillings=[...(p.fillings||[])];
+  editImgs=[...(p.images||[])]; window.editPrices=[...(p.prices||[])]; window.editDoughs=[...(p.doughs||[])]; window.editFillings=[...(p.fillings||[])]; window.editAdditionals=[...(p.additionals||[])];
   document.getElementById('editPanelBody').innerHTML=`
     <div class="grid-2">
       <div class="field"><label>Nome do item</label><input type="text" id="ef_title" value="${esc(p.title)}" placeholder="Ex: Naked Cake"></div>
@@ -838,6 +838,17 @@ function renderEditForm(p) {
       <div class="tags-editor" id="ef_fillingsTags"></div>
       <div class="tag-add-row"><input type="text" id="ef_fillingsInput" placeholder="Ex: Ninho gourmet" onkeydown="if(event.key==='Enter'){addTag('fillings');event.preventDefault();}"><button class="btn btn-secondary btn-sm" onclick="addTag('fillings')">+</button></div>
     </div>
+    <div class="field">
+      <label>Adicionais <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+      <div id="ef_additionalsContainer"></div>
+      <div class="add-btn-row">
+        <button class="btn btn-secondary btn-sm" onclick="addAdditionalRow()">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Adicionar adicional
+        </button>
+      </div>
+    </div>
+
     <div class="field"><label>Observações</label><textarea id="ef_observations" rows="2">${esc(p.observations||'')}</textarea></div>
 
     <div class="field">
@@ -854,7 +865,7 @@ function renderEditForm(p) {
         Salvar item
       </button>
     </div>`;
-  renderGalleryPreviews(); renderPriceRows(); renderTags('doughs'); renderTags('fillings');
+  renderGalleryPreviews(); renderPriceRows(); renderTags('doughs'); renderTags('fillings'); renderAdditionalRows();
   document.getElementById('ef_cardImage').addEventListener('input', function() {
     const prev=document.getElementById('ef_cardPreview');
     if(prev&&this.value){prev.src=this.value;prev.style.display='block';}
@@ -948,6 +959,18 @@ function renderPriceRows() {
     }
   }).join('');
 }
+window.editAdditionals = [];
+window.addAdditionalRow = function() { window.editAdditionals.push({name:'',price:''}); renderAdditionalRows(); };
+window.removeAdditionalRow = function(i) { window.editAdditionals.splice(i,1); renderAdditionalRows(); };
+function renderAdditionalRows() {
+  const c = document.getElementById('ef_additionalsContainer'); if(!c) return;
+  c.innerHTML = window.editAdditionals.map((a,i) => `
+    <div class="price-row">
+      <input type="text" value="${esc(a.name)}" placeholder="Nome (ex: Morango)" oninput="window.editAdditionals[${i}].name=this.value">
+      <input type="text" value="${esc(a.price)}" placeholder="Preço (ex: a partir de R$ 7,00)" oninput="window.editAdditionals[${i}].price=this.value">
+      <button class="btn btn-danger btn-sm" onclick="removeAdditionalRow(${i})">✕</button>
+    </div>`).join('');
+}
 window.addTag = function(type) {
   const id=type==='doughs'?'ef_doughInput':'ef_fillingsInput';
   const input=document.getElementById(id); if(!input||!input.value.trim()) return;
@@ -978,6 +1001,7 @@ window.saveProduct = async function() {
     prices:window.editPrices.filter(p=>p.flavor),
     doughs:[...window.editDoughs], fillings:[...window.editFillings],
     observations:document.getElementById('ef_observations').value.trim(),
+    additionals: window.editAdditionals.filter(a=>a.name),
     mensagemWpp:document.getElementById('ef_mensagemWpp').value.trim()
   };
   if(editIdx!==null) appData.products[editIdx]=pd; else appData.products.push(pd);
@@ -1068,15 +1092,19 @@ window.saveContatos = async function() {
 // ── INFO ──
 function renderInfoPanel() {
   const c=document.getElementById('infoItemsContainer');
-  c.innerHTML=(appData.info||[]).map((item,i)=>`<div class="price-row"><input type="text" value="${esc(item)}" placeholder="Ex: Encomenda com 50% de entrada" oninput="appData.info[${i}]=this.value"><button class="btn btn-danger btn-sm" onclick="removeInfoItem(${i})">✕</button></div>`).join('');
+  // Expose info array to window so oninput can access it
+  window._adminInfo = appData.info || [];
+  c.innerHTML=window._adminInfo.map((item,i)=>`<div class="price-row"><input type="text" value="${esc(item)}" placeholder="Ex: Encomenda com 50% de entrada" oninput="window._adminInfo[${i}]=this.value;appData.info=window._adminInfo;"><button class="btn btn-danger btn-sm" onclick="removeInfoItem(${i})">✕</button></div>`).join('');
 }
 window.addInfoItem = function() {
   if(!appData.info) appData.info=[];
-  appData.info.push(''); renderInfoPanel();
+  appData.info.push('');
+  window._adminInfo = appData.info;
+  renderInfoPanel();
   const rows=document.querySelectorAll('#infoItemsContainer .price-row input');
   if(rows.length) rows[rows.length-1].focus();
 };
-window.removeInfoItem = function(i) { appData.info.splice(i,1); renderInfoPanel(); };
+window.removeInfoItem = function(i) { appData.info.splice(i,1); window._adminInfo=appData.info; renderInfoPanel(); };
 window.saveInfo = async function() {
   appData.info=(appData.info||[]).filter(i=>i.trim());
   await saveToFirestore({info:appData.info});
