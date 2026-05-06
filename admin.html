@@ -1069,7 +1069,7 @@ window.esc = s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){window.closeEditPanel();window.closeConfirm();}});
 
 // ── ESPECIAL ──
-let especialItens = [];
+window.especialItens = [];
 
 const COR_MAP = {
   rose:   { bg:'linear-gradient(135deg,#e8607a,#c94060)', text:'#fff', accent:'#fdf0f2' },
@@ -1091,7 +1091,7 @@ function renderEspecialPanel() {
   const cor = e.cor || 'rose';
   const radio = document.querySelector(`input[name="especial_cor"][value="${cor}"]`);
   if (radio) radio.checked = true;
-  especialItens = JSON.parse(JSON.stringify(e.itens || []));
+  window.especialItens = JSON.parse(JSON.stringify(e.itens || []));
   renderEspecialItens();
 }
 
@@ -1107,9 +1107,9 @@ window.selectCor = function(cor) {
 
 window.addEspecialItem = function(type) {
   if (type === 'variant') {
-    especialItens.push({ nome:'', descricao:'', foto:'', variants:[{name:'',price:''},{name:'',price:''}] });
+    window.window.especialItens.push({ nome:'', descricao:'', foto:'', variants:[{name:'',price:''},{name:'',price:''}] });
   } else {
-    especialItens.push({ nome:'', descricao:'', foto:'', preco:'' });
+    window.window.especialItens.push({ nome:'', descricao:'', foto:'', preco:'' });
   }
   renderEspecialItens();
   setTimeout(() => {
@@ -1119,18 +1119,18 @@ window.addEspecialItem = function(type) {
 };
 
 window.removeEspecialItem = function(i) {
-  especialItens.splice(i, 1);
+  window.window.especialItens.splice(i, 1);
   renderEspecialItens();
 };
 
 window.addEspecialVariant = function(i) {
-  if (!especialItens[i].variants) especialItens[i].variants = [];
-  especialItens[i].variants.push({name:'', price:''});
+  if (!window.especialItens[i].variants) window.especialItens[i].variants = [];
+  window.especialItens[i].variants.push({name:'', price:''});
   renderEspecialItens();
 };
 
 window.removeEspecialVariant = function(i, vi) {
-  especialItens[i].variants.splice(vi, 1);
+  window.especialItens[i].variants.splice(vi, 1);
   renderEspecialItens();
 };
 
@@ -1140,7 +1140,7 @@ window.handleEspecialItemPhoto = async function(i, input) {
   if (label) label.innerHTML = '<span class="spinner-inline"></span>';
   try {
     const url = await uploadToCloudinary(file, 'edna-cakes/especial');
-    especialItens[i].foto = url;
+    window.especialItens[i].foto = url;
     renderEspecialItens();
     showToast('Foto enviada! ✓', 'success');
   } catch(err) {
@@ -1152,11 +1152,11 @@ window.handleEspecialItemPhoto = async function(i, input) {
 function renderEspecialItens() {
   const c = document.getElementById('especialItensContainer');
   if (!c) return;
-  if (!especialItens.length) {
+  if (!window.window.especialItens.length) {
     c.innerHTML = '<div class="empty-state" style="padding:1.5rem;">Nenhum item. Use os botões acima para adicionar.</div>';
     return;
   }
-  c.innerHTML = especialItens.map((item, i) => {
+  c.innerHTML = window.window.especialItens.map((item, i) => {
     const photoBlock = `
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
         ${item.foto ? `<img src="${esc(item.foto)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid var(--rose-light);">` : ''}
@@ -1165,7 +1165,7 @@ function renderEspecialItens() {
           <label id="especial_foto_label_${i}" for="especial_foto_input_${i}" class="btn btn-secondary btn-sm" style="cursor:pointer;">
             📷 ${item.foto ? 'Trocar foto' : 'Adicionar foto'}
           </label>
-          ${item.foto ? `<button class="btn btn-danger btn-sm" style="margin-left:.4rem;" onclick="especialItens[${i}].foto='';renderEspecialItens()">✕ Remover</button>` : ''}
+          ${item.foto ? `<button class="btn btn-danger btn-sm" style="margin-left:.4rem;" onclick="window.especialItens[${i}].foto='';renderEspecialItens()">✕ Remover</button>` : ''}
         </div>
       </div>`;
 
@@ -1173,17 +1173,17 @@ function renderEspecialItens() {
       // Variant style
       const variantRows = item.variants.map((v, vi) => `
         <div class="price-row" style="margin-top:.35rem;padding-left:1rem;">
-          <input type="text" value="${esc(v.name)}" placeholder="Ex: Travessa pequena" oninput="especialItens[${i}].variants[${vi}].name=this.value">
-          <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="especialItens[${i}].variants[${vi}].price=this.value">
+          <input type="text" value="${esc(v.name)}" placeholder="Ex: Travessa pequena" oninput="window.especialItens[${i}].variants[${vi}].name=this.value">
+          <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="window.especialItens[${i}].variants[${vi}].price=this.value">
           <button class="btn btn-danger btn-sm" onclick="removeEspecialVariant(${i},${vi})">✕</button>
         </div>`).join('');
       return `<div class="especial-item-card">
         ${photoBlock}
         <div class="price-row" style="margin-bottom:.5rem;">
-          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" style="font-weight:600;" oninput="especialItens[${i}].nome=this.value">
+          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" style="font-weight:600;" oninput="window.especialItens[${i}].nome=this.value">
           <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
         </div>
-        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="especialItens[${i}].descricao=this.value" style="width:100%;margin-bottom:.5rem;">
+        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="window.especialItens[${i}].descricao=this.value" style="width:100%;margin-bottom:.5rem;">
         <div style="font-size:.75rem;color:var(--text-muted);margin:.3rem 0 .2rem .2rem;">Tamanhos / Preços:</div>
         ${variantRows}
         <button class="btn btn-secondary btn-sm" style="margin-top:.4rem;" onclick="addEspecialVariant(${i})">+ Tamanho</button>
@@ -1193,11 +1193,11 @@ function renderEspecialItens() {
       return `<div class="especial-item-card">
         ${photoBlock}
         <div class="price-row" style="margin-bottom:.5rem;">
-          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" oninput="especialItens[${i}].nome=this.value">
-          <input type="text" value="${esc(item.preco||'')}" placeholder="Preço (ex: R$ 45,00)" style="max-width:140px;" oninput="especialItens[${i}].preco=this.value">
+          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" oninput="window.especialItens[${i}].nome=this.value">
+          <input type="text" value="${esc(item.preco||'')}" placeholder="Preço (ex: R$ 45,00)" style="max-width:140px;" oninput="window.especialItens[${i}].preco=this.value">
           <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
         </div>
-        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="especialItens[${i}].descricao=this.value" style="width:100%;">
+        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="window.especialItens[${i}].descricao=this.value" style="width:100%;">
       </div>`;
     }
   }).join('');
@@ -1211,7 +1211,7 @@ window.saveEspecial = async function() {
     descricao: document.getElementById('especialDesc').value.trim(),
     validade: document.getElementById('especialValidade').value,
     cor,
-    itens: especialItens
+    itens: window.especialItens
       .filter(i => i.nome && i.nome.trim())
       .map(i => ({
         nome: i.nome || '',
