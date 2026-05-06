@@ -450,14 +450,20 @@
 
               <hr class="divider">
 
-              <div class="card-header" style="margin-bottom:.75rem;">
-                <div style="font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--text);">Itens do cardápio especial</div>
-                <button class="btn btn-primary btn-sm" onclick="addEspecialItem()">
-                  <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Adicionar item
-                </button>
+              <div style="margin-bottom:.75rem;">
+                <div style="font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:.6rem;">Itens do cardápio especial</div>
+                <p class="section-subtitle" style="margin-bottom:.75rem;">Cada item pode ter foto, nome, descrição e preço simples ou com tamanhos.</p>
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+                  <button class="btn btn-secondary btn-sm" onclick="addEspecialItem('simple')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    + Sabor simples
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="addEspecialItem('variant')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    + Sabor com tamanhos
+                  </button>
+                </div>
               </div>
-              <p class="section-subtitle" style="margin-top:-.5rem;">Adicione os produtos do cardápio especial com nome, descrição e preço.</p>
               <div id="especialItensContainer"></div>
             </div>
 
@@ -1099,13 +1105,16 @@ window.selectCor = function(cor) {
   if (radio) radio.checked = true;
 };
 
-window.addEspecialItem = function() {
-  especialItens.push({ nome:'', descricao:'', preco:'' });
+window.addEspecialItem = function(type) {
+  if (type === 'variant') {
+    especialItens.push({ nome:'', descricao:'', foto:'', variants:[{name:'',price:''},{name:'',price:''}] });
+  } else {
+    especialItens.push({ nome:'', descricao:'', foto:'', preco:'' });
+  }
   renderEspecialItens();
-  // Focus last item
   setTimeout(() => {
-    const inputs = document.querySelectorAll('.especial-item-card input');
-    if (inputs.length) inputs[inputs.length - 3].focus();
+    const cards = document.querySelectorAll('.especial-item-card');
+    if (cards.length) cards[cards.length-1].querySelector('input')?.focus();
   }, 50);
 };
 
@@ -1114,23 +1123,84 @@ window.removeEspecialItem = function(i) {
   renderEspecialItens();
 };
 
+window.addEspecialVariant = function(i) {
+  if (!especialItens[i].variants) especialItens[i].variants = [];
+  especialItens[i].variants.push({name:'', price:''});
+  renderEspecialItens();
+};
+
+window.removeEspecialVariant = function(i, vi) {
+  especialItens[i].variants.splice(vi, 1);
+  renderEspecialItens();
+};
+
+window.handleEspecialItemPhoto = async function(i, input) {
+  const file = input.files[0]; if (!file) return;
+  const label = document.getElementById('especial_foto_label_' + i);
+  if (label) label.innerHTML = '<span class="spinner-inline"></span>';
+  try {
+    const url = await uploadToCloudinary(file, 'edna-cakes/especial');
+    especialItens[i].foto = url;
+    renderEspecialItens();
+    showToast('Foto enviada! ✓', 'success');
+  } catch(err) {
+    showToast('Erro no upload: ' + err.message, 'error');
+    if (label) label.innerHTML = '📷 Upload';
+  }
+};
+
 function renderEspecialItens() {
   const c = document.getElementById('especialItensContainer');
   if (!c) return;
   if (!especialItens.length) {
-    c.innerHTML = '<div class="empty-state" style="padding:1.5rem;">Nenhum item adicionado. Clique em "Adicionar item".</div>';
+    c.innerHTML = '<div class="empty-state" style="padding:1.5rem;">Nenhum item. Use os botões acima para adicionar.</div>';
     return;
   }
-  c.innerHTML = especialItens.map((item, i) => `
-    <div class="especial-item-card">
-      <div class="especial-item-row" style="margin-bottom:.5rem;">
-        <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" oninput="especialItens[${i}].nome=this.value" style="flex:2;">
-        <input type="text" value="${esc(item.preco)}" placeholder="Preço (ex: R$ 45,00)" oninput="especialItens[${i}].preco=this.value" style="max-width:140px;">
-        <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
-      </div>
-      <input type="text" value="${esc(item.descricao)}" placeholder="Descrição breve (ex: Recheado com brigadeiro gourmet)" oninput="especialItens[${i}].descricao=this.value" style="width:100%;">
-    </div>
-  `).join('');
+  c.innerHTML = especialItens.map((item, i) => {
+    const photoBlock = `
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
+        ${item.foto ? `<img src="${esc(item.foto)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid var(--rose-light);">` : ''}
+        <div>
+          <input type="file" id="especial_foto_input_${i}" accept="image/*" style="display:none;" onchange="handleEspecialItemPhoto(${i},this)">
+          <label id="especial_foto_label_${i}" for="especial_foto_input_${i}" class="btn btn-secondary btn-sm" style="cursor:pointer;">
+            📷 ${item.foto ? 'Trocar foto' : 'Adicionar foto'}
+          </label>
+          ${item.foto ? `<button class="btn btn-danger btn-sm" style="margin-left:.4rem;" onclick="especialItens[${i}].foto='';renderEspecialItens()">✕ Remover</button>` : ''}
+        </div>
+      </div>`;
+
+    if (item.variants) {
+      // Variant style
+      const variantRows = item.variants.map((v, vi) => `
+        <div class="price-row" style="margin-top:.35rem;padding-left:1rem;">
+          <input type="text" value="${esc(v.name)}" placeholder="Ex: Travessa pequena" oninput="especialItens[${i}].variants[${vi}].name=this.value">
+          <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="especialItens[${i}].variants[${vi}].price=this.value">
+          <button class="btn btn-danger btn-sm" onclick="removeEspecialVariant(${i},${vi})">✕</button>
+        </div>`).join('');
+      return `<div class="especial-item-card">
+        ${photoBlock}
+        <div class="price-row" style="margin-bottom:.5rem;">
+          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" style="font-weight:600;" oninput="especialItens[${i}].nome=this.value">
+          <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
+        </div>
+        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="especialItens[${i}].descricao=this.value" style="width:100%;margin-bottom:.5rem;">
+        <div style="font-size:.75rem;color:var(--text-muted);margin:.3rem 0 .2rem .2rem;">Tamanhos / Preços:</div>
+        ${variantRows}
+        <button class="btn btn-secondary btn-sm" style="margin-top:.4rem;" onclick="addEspecialVariant(${i})">+ Tamanho</button>
+      </div>`;
+    } else {
+      // Simple style
+      return `<div class="especial-item-card">
+        ${photoBlock}
+        <div class="price-row" style="margin-bottom:.5rem;">
+          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" oninput="especialItens[${i}].nome=this.value">
+          <input type="text" value="${esc(item.preco||'')}" placeholder="Preço (ex: R$ 45,00)" style="max-width:140px;" oninput="especialItens[${i}].preco=this.value">
+          <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
+        </div>
+        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="especialItens[${i}].descricao=this.value" style="width:100%;">
+      </div>`;
+    }
+  }).join('');
 }
 
 window.saveEspecial = async function() {
