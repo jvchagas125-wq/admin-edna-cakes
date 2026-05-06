@@ -1187,6 +1187,12 @@ window.selectCor = function(cor) {
   if (radio) radio.checked = true;
 };
 
+window.removeEspecialFoto = function(i) {
+  window.especialItens[i].foto = '';
+  _syncPaused = true;
+  renderEspecialItens();
+};
+
 window.addEspecialItem = function(type) {
   if (type === 'variant') {
     window.especialItens.push({ nome:'', descricao:'', foto:'', variants:[{name:'',price:''},{name:'',price:''}] });
@@ -1251,7 +1257,7 @@ function renderEspecialItens() {
           <label id="especial_foto_label_${i}" for="especial_foto_input_${i}" class="btn btn-secondary btn-sm" style="cursor:pointer;display:inline-flex;">
             📷 ${item.foto ? 'Trocar foto' : 'Fazer upload da foto'}
           </label>
-          ${item.foto ? `<button class="btn btn-danger btn-sm" style="margin-left:.4rem;" onclick="window.especialItens[${i}].foto='';renderEspecialItens()">✕ Remover</button>` : ''}
+          ${item.foto ? `<button class="btn btn-danger btn-sm" style="margin-left:.4rem;" onclick="removeEspecialFoto(${i})">✕ Remover</button>` : ''}
           <div style="margin-top:.5rem;font-size:.73rem;color:var(--text-muted);line-height:1.5;">
             📐 <b>Tamanho ideal:</b> <b>300 × 300 px</b><br>
             Proporção quadrada (1:1) · JPG ou WebP · Máx. 200 KB
