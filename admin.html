@@ -473,6 +473,12 @@
             </div>
 
             <hr class="divider">
+            <div class="field">
+              <label>📝 Observações</label>
+              <textarea id="especialObservacoes" rows="3" placeholder="Ex: Encomendas com no mínimo 48h de antecedência. Retirada somente na loja."></textarea>
+              <p style="font-size:.75rem;color:var(--text-muted);margin-top:.3rem;">Aparece em destaque no final do cardápio especial no site.</p>
+            </div>
+            <hr class="divider">
             <button class="btn btn-primary" onclick="saveEspecial()">
               <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
               Salvar cardápio especial
@@ -1128,6 +1134,8 @@ function renderEspecialPanel() {
   document.getElementById('especialValidade').value = e.validade || '';
   const mwpp = document.getElementById('especialMensagemWpp');
   if (mwpp) mwpp.value = e.mensagemWpp || '';
+  const obs = document.getElementById('especialObservacoes');
+  if (obs) obs.value = e.observacoes || '';
   // Set color radio
   const cor = e.cor || 'rose';
   const radio = document.querySelector(`input[name="especial_cor"][value="${cor}"]`);
@@ -1260,6 +1268,7 @@ window.saveEspecial = async function() {
     descricao: document.getElementById('especialDesc').value.trim(),
     validade: document.getElementById('especialValidade').value,
     mensagemWpp: mwppEl ? mwppEl.value.trim() : '',
+    observacoes: (document.getElementById('especialObservacoes')?.value || '').trim(),
     cor,
     itens: window.especialItens
       .filter(i => i.nome && i.nome.trim())
