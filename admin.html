@@ -35,6 +35,13 @@
     .login-error{background:var(--red-light);color:var(--red);font-size:.82rem;padding:.6rem .9rem;border-radius:8px;margin-bottom:.85rem;display:none;}
     .login-spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;}
     .spinner-inline{width:14px;height:14px;border:2px solid rgba(232,96,122,.3);border-top-color:var(--rose);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+    /* ── DRAG AND DROP ── */
+    .drag-handle{width:28px;height:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--text-muted);border-radius:6px;transition:background .15s,color .15s;}
+    .drag-handle:hover{background:var(--rose-pale);color:var(--rose);}
+    .drag-handle:active{cursor:grabbing;}
+    .drag-handle svg{width:16px;height:16px;pointer-events:none;}
+    .product-list-item.dragging{opacity:.45;box-shadow:0 8px 24px rgba(232,96,122,.2);background:var(--rose-pale);}
+    .product-list-item.drag-over{border-color:var(--rose);box-shadow:0 0 0 2px rgba(232,96,122,.25);}
 
     #adminApp{display:none;min-height:100vh;}
     .layout{display:flex;min-height:100vh;}
@@ -729,7 +736,10 @@ function renderProductList() {
   const c = document.getElementById('productListContainer');
   if (!appData.products.length) { c.innerHTML='<div class="empty-state">Nenhum item. Clique em "Novo item".</div>'; return; }
   c.innerHTML = appData.products.map((p,i)=>`
-    <div class="product-list-item">
+    <div class="product-list-item" draggable="true" data-index="${i}">
+      <div class="drag-handle" title="Arrastar para reordenar">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="5" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="19" r="1" fill="currentColor"/></svg>
+      </div>
       <img class="product-thumb" src="${p.cardImage||''}" alt="${p.title}" onerror="this.style.background='var(--rose-pale)';this.src=''">
       <div class="product-info">
         <h4>${p.title} ${p.badge?`<span class="badge badge-rose">${p.badge}</span>`:''}</h4>
@@ -745,6 +755,46 @@ function renderProductList() {
         </button>
       </div>
     </div>`).join('');
+  initDragSort();
+}
+
+// ── DRAG TO REORDER ──
+let _dragIdx = null;
+
+function initDragSort() {
+  const container = document.getElementById('productListContainer');
+  const items = container.querySelectorAll('.product-list-item');
+
+  items.forEach(item => {
+    item.addEventListener('dragstart', e => {
+      _dragIdx = parseInt(item.dataset.index);
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      container.querySelectorAll('.product-list-item').forEach(i => i.classList.remove('drag-over'));
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      container.querySelectorAll('.product-list-item').forEach(i => i.classList.remove('drag-over'));
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('drop', async e => {
+      e.preventDefault();
+      const dropIdx = parseInt(item.dataset.index);
+      if (_dragIdx === null || _dragIdx === dropIdx) return;
+      // Reorder
+      const moved = appData.products.splice(_dragIdx, 1)[0];
+      appData.products.splice(dropIdx, 0, moved);
+      _dragIdx = null;
+      renderProductList();
+      // Save new order
+      await saveToFirestore({ products: appData.products });
+      showToast('Ordem salva! ✓', 'success');
+    });
+  });
 }
 
 // Expose to window so inline oninput handlers can access them
@@ -1193,6 +1243,21 @@ window.removeEspecialFoto = function(i) {
   renderEspecialItens();
 };
 
+window.addEspecialRecheio = function(i) {
+  const input = document.getElementById('esp_recheio_input_' + i);
+  if (!input || !input.value.trim()) return;
+  if (!window.especialItens[i].recheios) window.especialItens[i].recheios = [];
+  window.especialItens[i].recheios.push(input.value.trim());
+  input.value = '';
+  _syncPaused = true;
+  renderEspecialItens();
+};
+window.removeEspecialRecheio = function(i, fi) {
+  window.especialItens[i].recheios.splice(fi, 1);
+  _syncPaused = true;
+  renderEspecialItens();
+};
+
 window.addEspecialItem = function(type) {
   if (type === 'variant') {
     window.especialItens.push({ nome:'', descricao:'', foto:'', variants:[{name:'',price:''},{name:'',price:''}] });
@@ -1273,6 +1338,8 @@ function renderEspecialItens() {
           <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="window.especialItens[${i}].variants[${vi}].price=this.value">
           <button class="btn btn-danger btn-sm" onclick="removeEspecialVariant(${i},${vi})">✕</button>
         </div>`).join('');
+      const fillingsTagsVariant = (item.recheios||[]).map((f,fi)=>
+        `<span class="tag-pill">${esc(f)} <button onclick="removeEspecialRecheio(${i},${fi})">✕</button></span>`).join('');
       return `<div class="especial-item-card">
         ${photoBlock}
         <div class="price-row" style="margin-bottom:.5rem;">
@@ -1283,9 +1350,17 @@ function renderEspecialItens() {
         <div style="font-size:.75rem;color:var(--text-muted);margin:.3rem 0 .2rem .2rem;">Tamanhos / Preços:</div>
         ${variantRows}
         <button class="btn btn-secondary btn-sm" style="margin-top:.4rem;" onclick="addEspecialVariant(${i})">+ Tamanho</button>
+        <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);margin:.75rem 0 .3rem;">Recheios disponíveis <span style="font-weight:400">(opcional)</span></div>
+        <div class="tags-editor" style="margin-bottom:.35rem;">${fillingsTagsVariant}</div>
+        <div class="tag-add-row">
+          <input type="text" id="esp_recheio_input_${i}" placeholder="Ex: Chocolate 50%" onkeydown="if(event.key==='Enter'){addEspecialRecheio(${i});event.preventDefault();}">
+          <button class="btn btn-secondary btn-sm" onclick="addEspecialRecheio(${i})">+</button>
+        </div>
       </div>`;
     } else {
       // Simple style
+      const fillingsTagsSimple = (item.recheios||[]).map((f,fi)=>
+        `<span class="tag-pill">${esc(f)} <button onclick="removeEspecialRecheio(${i},${fi})">✕</button></span>`).join('');
       return `<div class="especial-item-card">
         ${photoBlock}
         <div class="price-row" style="margin-bottom:.5rem;">
@@ -1293,7 +1368,13 @@ function renderEspecialItens() {
           <input type="text" value="${esc(item.preco||'')}" placeholder="Preço (ex: R$ 45,00)" style="max-width:140px;" oninput="window.especialItens[${i}].preco=this.value">
           <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
         </div>
-        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="window.especialItens[${i}].descricao=this.value" style="width:100%;">
+        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="window.especialItens[${i}].descricao=this.value" style="width:100%;margin-bottom:.5rem;">
+        <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);margin:.4rem 0 .3rem;">Recheios disponíveis <span style="font-weight:400">(opcional)</span></div>
+        <div class="tags-editor" style="margin-bottom:.35rem;">${fillingsTagsSimple}</div>
+        <div class="tag-add-row">
+          <input type="text" id="esp_recheio_input_${i}" placeholder="Ex: Brigadeiro gourmet" onkeydown="if(event.key==='Enter'){addEspecialRecheio(${i});event.preventDefault();}">
+          <button class="btn btn-secondary btn-sm" onclick="addEspecialRecheio(${i})">+</button>
+        </div>
       </div>`;
     }
   }).join('');
@@ -1318,6 +1399,7 @@ window.saveEspecial = async function() {
         descricao: i.descricao || '',
         foto: i.foto || '',
         preco: i.preco || '',
+        recheios: (i.recheios || []).filter(r => r.trim()),
         variants: (i.variants || []).map(v => ({ name: v.name||'', price: v.price||'' }))
       }))
   };
@@ -1329,50 +1411,6 @@ window.saveEspecial = async function() {
   renderEspecialItens();
   showToast('Cardápio especial salvo! ✓', 'success');
 };
- // ── DRAG AND DROP ──
-  let dragSrcId = null;
-  function initDragAndDrop(tbody) {
-    tbody.querySelectorAll('tr[draggable]').forEach(tr => {
-      tr.addEventListener('dragstart', e => {
-        dragSrcId = tr.dataset.id;
-        tr.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-      });
-      tr.addEventListener('dragend', () => {
-        tr.classList.remove('dragging');
-        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
-      });
-      tr.addEventListener('dragover', e => {
-        e.preventDefault();
-        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
-        if (tr.dataset.id !== dragSrcId) tr.classList.add('drag-over');
-      });
-      tr.addEventListener('drop', async e => {
-        e.preventDefault();
-        tr.classList.remove('drag-over');
-        if (!dragSrcId || tr.dataset.id === dragSrcId) return;
-
-        // Reordena localmente
-        const ids = giftsCache.map(g => g.id);
-        const fromIdx = ids.indexOf(dragSrcId);
-        const toIdx   = ids.indexOf(tr.dataset.id);
-        if (fromIdx === -1 || toIdx === -1) return;
-        const reordered = [...giftsCache];
-        const [moved] = reordered.splice(fromIdx, 1);
-        reordered.splice(toIdx, 0, moved);
-
-        // Salva nova ordem no Firestore
-        try {
-          const batch = reordered.map((g, i) => updateDoc(doc(db,'gifts',g.id), { order: i+1 }));
-          await Promise.all(batch);
-          showToast('Ordem atualizada! ✅','success');
-        } catch(err) {
-          showToast('Erro ao reordenar.','error');
-        }
-        dragSrcId = null;
-      });
-    });
-  }
 </script>
 </body>
 </html>
