@@ -638,8 +638,13 @@ function startRealtimeSync() {
     if (panelId === 'panel-logo')      renderLogoPanel();
     if (panelId === 'panel-contatos')  renderContatosPanel();
     if (panelId === 'panel-info')      renderInfoPanel();
-    // For especial panel: only auto-refresh if user hasn't started editing
-    if (panelId === 'panel-especial' && window.especialItens.length === 0) renderEspecialPanel();
+    // For especial panel: never auto-refresh while editing
+    if (panelId === 'panel-especial') {
+      // Only refresh if we have saved data and user hasn't added new items
+      const savedCount = (appData.especial?.itens || []).length;
+      const editCount = window.especialItens.length;
+      if (savedCount === editCount) renderEspecialPanel();
+    }
   }, (err) => {
     console.warn('[Admin] Realtime sync error:', err.code);
   });
@@ -1381,7 +1386,8 @@ function renderEspecialItens() {
 }
 
 window.saveEspecial = async function() {
-  _syncPaused = false; // allow sync again after save
+  // Keep sync paused throughout — release AFTER we've confirmed the render
+  _syncPaused = true;
   const cor = document.querySelector('input[name="especial_cor"]:checked')?.value || 'rose';
   const mwppEl = document.getElementById('especialMensagemWpp');
   const especial = {
@@ -1405,11 +1411,18 @@ window.saveEspecial = async function() {
   };
   appData.especial = especial;
   console.log('[Admin] Saving especial. itens:', especial.itens.length);
-  await saveToFirestore({ especial });
-  // Re-render with saved data to confirm persistence
-  window.especialItens = JSON.parse(JSON.stringify(especial.itens));
-  renderEspecialItens();
-  showToast('Cardápio especial salvo! ✓', 'success');
+  try {
+    await saveToFirestore({ especial });
+    // Re-render with exactly what was saved
+    window.especialItens = JSON.parse(JSON.stringify(especial.itens));
+    renderEspecialItens();
+    showToast('Cardápio especial salvo! ✓', 'success');
+  } catch(e) {
+    showToast('Erro ao salvar. Tente novamente.', 'error');
+  } finally {
+    // Release sync lock after a short delay so snapshot doesn't overwrite
+    setTimeout(() => { _syncPaused = false; }, 2000);
+  }
 };
 </script>
 </body>
