@@ -1242,6 +1242,16 @@ window.selectCor = function(cor) {
   if (radio) radio.checked = true;
 };
 
+// Global setters — work from both module and inline HTML contexts
+window.setEspItem = function(i, field, val) {
+  if (window.especialItens[i]) window.especialItens[i][field] = val;
+};
+window.setEspVariant = function(i, vi, field, val) {
+  if (window.especialItens[i] && window.especialItens[i].variants && window.especialItens[i].variants[vi]) {
+    window.especialItens[i].variants[vi][field] = val;
+  }
+};
+
 window.removeEspecialFoto = function(i) {
   window.especialItens[i].foto = '';
   _syncPaused = true;
@@ -1339,8 +1349,8 @@ function renderEspecialItens() {
       // Variant style
       const variantRows = item.variants.map((v, vi) => `
         <div class="price-row" style="margin-top:.35rem;padding-left:1rem;">
-          <input type="text" value="${esc(v.name)}" placeholder="Ex: Travessa pequena" oninput="window.especialItens[${i}].variants[${vi}].name=this.value">
-          <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="window.especialItens[${i}].variants[${vi}].price=this.value">
+          <input type="text" value="${esc(v.name)}" placeholder="Ex: Travessa pequena" oninput="setEspVariant(${i},${vi},'name',this.value)">
+          <input type="text" value="${esc(v.price)}" placeholder="Preço" style="max-width:120px;" oninput="setEspVariant(${i},${vi},'price',this.value)">
           <button class="btn btn-danger btn-sm" onclick="removeEspecialVariant(${i},${vi})">✕</button>
         </div>`).join('');
       const fillingsTagsVariant = (item.recheios||[]).map((f,fi)=>
@@ -1348,10 +1358,10 @@ function renderEspecialItens() {
       return `<div class="especial-item-card">
         ${photoBlock}
         <div class="price-row" style="margin-bottom:.5rem;">
-          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" style="font-weight:600;" oninput="window.especialItens[${i}].nome=this.value">
+          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" style="font-weight:600;" oninput="setEspItem(${i},'nome',this.value)">
           <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
         </div>
-        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="window.especialItens[${i}].descricao=this.value" style="width:100%;margin-bottom:.5rem;">
+        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="setEspItem(${i},'descricao',this.value)" style="width:100%;margin-bottom:.5rem;">
         <div style="font-size:.75rem;color:var(--text-muted);margin:.3rem 0 .2rem .2rem;">Tamanhos / Preços:</div>
         ${variantRows}
         <button class="btn btn-secondary btn-sm" style="margin-top:.4rem;" onclick="addEspecialVariant(${i})">+ Tamanho</button>
@@ -1369,11 +1379,11 @@ function renderEspecialItens() {
       return `<div class="especial-item-card">
         ${photoBlock}
         <div class="price-row" style="margin-bottom:.5rem;">
-          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" oninput="window.especialItens[${i}].nome=this.value">
-          <input type="text" value="${esc(item.preco||'')}" placeholder="Preço (ex: R$ 45,00)" style="max-width:140px;" oninput="window.especialItens[${i}].preco=this.value">
+          <input type="text" value="${esc(item.nome)}" placeholder="Nome do produto (ex: Panetone Trufado 🎄)" oninput="setEspItem(${i},'nome',this.value)">
+          <input type="text" value="${esc(item.preco||'')}" placeholder="Preço (ex: R$ 45,00)" style="max-width:140px;" oninput="setEspItem(${i},'preco',this.value)">
           <button class="btn btn-danger btn-sm" onclick="removeEspecialItem(${i})">✕</button>
         </div>
-        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="window.especialItens[${i}].descricao=this.value" style="width:100%;margin-bottom:.5rem;">
+        <input type="text" value="${esc(item.descricao||'')}" placeholder="Descrição (ex: Recheado com brigadeiro gourmet)" oninput="setEspItem(${i},'descricao',this.value)" style="width:100%;margin-bottom:.5rem;">
         <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);margin:.4rem 0 .3rem;">Recheios disponíveis <span style="font-weight:400">(opcional)</span></div>
         <div class="tags-editor" style="margin-bottom:.35rem;">${fillingsTagsSimple}</div>
         <div class="tag-add-row">
@@ -1399,7 +1409,7 @@ window.saveEspecial = async function() {
     observacoes: (document.getElementById('especialObservacoes')?.value || '').trim(),
     cor,
     itens: window.especialItens
-      .filter(i => i.nome && i.nome.trim())
+      .filter(i => (i.nome && i.nome.trim()) || i.foto || (i.preco && i.preco.trim()) || (i.variants && i.variants.length))
       .map(i => ({
         nome: i.nome || '',
         descricao: i.descricao || '',
