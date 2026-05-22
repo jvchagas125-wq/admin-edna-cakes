@@ -1329,6 +1329,50 @@ window.saveEspecial = async function() {
   renderEspecialItens();
   showToast('Cardápio especial salvo! ✓', 'success');
 };
+ // ── DRAG AND DROP ──
+  let dragSrcId = null;
+  function initDragAndDrop(tbody) {
+    tbody.querySelectorAll('tr[draggable]').forEach(tr => {
+      tr.addEventListener('dragstart', e => {
+        dragSrcId = tr.dataset.id;
+        tr.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      tr.addEventListener('dragend', () => {
+        tr.classList.remove('dragging');
+        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+      });
+      tr.addEventListener('dragover', e => {
+        e.preventDefault();
+        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+        if (tr.dataset.id !== dragSrcId) tr.classList.add('drag-over');
+      });
+      tr.addEventListener('drop', async e => {
+        e.preventDefault();
+        tr.classList.remove('drag-over');
+        if (!dragSrcId || tr.dataset.id === dragSrcId) return;
+
+        // Reordena localmente
+        const ids = giftsCache.map(g => g.id);
+        const fromIdx = ids.indexOf(dragSrcId);
+        const toIdx   = ids.indexOf(tr.dataset.id);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const reordered = [...giftsCache];
+        const [moved] = reordered.splice(fromIdx, 1);
+        reordered.splice(toIdx, 0, moved);
+
+        // Salva nova ordem no Firestore
+        try {
+          const batch = reordered.map((g, i) => updateDoc(doc(db,'gifts',g.id), { order: i+1 }));
+          await Promise.all(batch);
+          showToast('Ordem atualizada! ✅','success');
+        } catch(err) {
+          showToast('Erro ao reordenar.','error');
+        }
+        dragSrcId = null;
+      });
+    });
+  }
 </script>
 </body>
 </html>
