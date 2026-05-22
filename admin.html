@@ -1304,18 +1304,35 @@ window.removeEspecialVariant = function(i, vi) {
 };
 
 window.handleEspecialItemPhoto = async function(i, input) {
-  const file = input.files[0]; if (!file) return;
+  const files = Array.from(input.files); if (!files.length) return;
   const label = document.getElementById('especial_foto_label_' + i);
-  if (label) label.innerHTML = '<span class="spinner-inline"></span>';
+  if (label) label.innerHTML = '<span class="spinner-inline"></span> Enviando...';
   try {
-    const url = await uploadToCloudinary(file, 'edna-cakes/especial');
-    window.especialItens[i].foto = url;
+    for (const file of files) {
+      const url = await uploadToCloudinary(file, 'edna-cakes/especial');
+      if (!window.especialItens[i].fotos) window.especialItens[i].fotos = [];
+      // Legacy: migrate single foto to fotos array
+      if (window.especialItens[i].foto) {
+        window.especialItens[i].fotos.unshift(window.especialItens[i].foto);
+        window.especialItens[i].foto = '';
+      }
+      window.especialItens[i].fotos.push(url);
+    }
+    _syncPaused = true;
     renderEspecialItens();
-    showToast('Foto enviada! ✓', 'success');
+    showToast(files.length + ' foto(s) enviada(s)! ✓', 'success');
   } catch(err) {
     showToast('Erro no upload: ' + err.message, 'error');
-    if (label) label.innerHTML = '📷 Upload';
+  } finally {
+    if (label) label.innerHTML = '📷 Adicionar fotos';
   }
+};
+
+window.removeEspecialItemFoto = function(i, fi) {
+  if (!window.especialItens[i].fotos) return;
+  window.especialItens[i].fotos.splice(fi, 1);
+  _syncPaused = true;
+  renderEspecialItens();
 };
 
 function renderEspecialItens() {
@@ -1326,22 +1343,25 @@ function renderEspecialItens() {
     return;
   }
   c.innerHTML = window.especialItens.map((item, i) => {
+    // Merge legacy foto into fotos array
+    const fotos = item.fotos && item.fotos.length ? item.fotos : (item.foto ? [item.foto] : []);
+    const fotosPreviews = fotos.map((url, fi) => `
+      <div class="photo-preview-item">
+        <img src="${esc(url)}" onerror="this.style.background='var(--rose-pale)'">
+        <button class="remove-photo" onclick="removeEspecialItemFoto(${i},${fi})">✕</button>
+      </div>`).join('');
     const photoBlock = `
-      <div style="display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.75rem;background:var(--rose-pale);border:1.5px dashed rgba(232,96,122,.3);border-radius:10px;padding:.75rem;">
-        ${item.foto
-          ? `<img src="${esc(item.foto)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--rose-light);flex-shrink:0;">`
-          : `<div style="width:80px;height:80px;border-radius:8px;background:white;border:2px dashed var(--rose-light);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">📷</div>`
-        }
-        <div style="flex:1;">
-          <input type="file" id="especial_foto_input_${i}" accept="image/*" style="display:none;" onchange="handleEspecialItemPhoto(${i},this)">
+      <div style="background:var(--rose-pale);border:1.5px dashed rgba(232,96,122,.3);border-radius:10px;padding:.75rem;margin-bottom:.75rem;">
+        <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:${fotos.length?'.6rem':'0'};">
+          <input type="file" id="especial_foto_input_${i}" accept="image/*" multiple style="display:none;" onchange="handleEspecialItemPhoto(${i},this)">
           <label id="especial_foto_label_${i}" for="especial_foto_input_${i}" class="btn btn-secondary btn-sm" style="cursor:pointer;display:inline-flex;">
-            📷 ${item.foto ? 'Trocar foto' : 'Fazer upload da foto'}
+            📷 Adicionar fotos
           </label>
-          ${item.foto ? `<button class="btn btn-danger btn-sm" style="margin-left:.4rem;" onclick="removeEspecialFoto(${i})">✕ Remover</button>` : ''}
-          <div style="margin-top:.5rem;font-size:.73rem;color:var(--text-muted);line-height:1.5;">
-            📐 <b>Tamanho ideal:</b> <b>300 × 300 px</b><br>
-            Proporção quadrada (1:1) · JPG ou WebP · Máx. 200 KB
-          </div>
+          <span style="font-size:.72rem;color:var(--text-muted);">Pode selecionar várias</span>
+        </div>
+        ${fotos.length ? `<div class="photo-preview-wrap">${fotosPreviews}</div>` : ''}
+        <div style="margin-top:.5rem;font-size:.72rem;color:var(--text-muted);line-height:1.5;">
+          📐 <b>Tamanho ideal: 600 × 400 px</b> · JPG ou WebP · Máx. 300 KB cada
         </div>
       </div>`;
 
@@ -1409,15 +1429,21 @@ window.saveEspecial = async function() {
     observacoes: (document.getElementById('especialObservacoes')?.value || '').trim(),
     cor,
     itens: window.especialItens
-      .filter(i => (i.nome && i.nome.trim()) || i.foto || (i.preco && i.preco.trim()) || (i.variants && i.variants.length))
-      .map(i => ({
-        nome: i.nome || '',
-        descricao: i.descricao || '',
-        foto: i.foto || '',
-        preco: i.preco || '',
-        recheios: (i.recheios || []).filter(r => r.trim()),
-        variants: (i.variants || []).map(v => ({ name: v.name||'', price: v.price||'' }))
-      }))
+      .filter(i => (i.nome && i.nome.trim()) || i.foto || (i.fotos && i.fotos.length) || (i.preco && i.preco.trim()) || (i.variants && i.variants.length))
+      .map(i => {
+        // Merge legacy foto into fotos array
+        let fotos = i.fotos && i.fotos.length ? [...i.fotos] : [];
+        if (i.foto && !fotos.includes(i.foto)) fotos.unshift(i.foto);
+        return {
+          nome: i.nome || '',
+          descricao: i.descricao || '',
+          fotos,
+          foto: '', // clear legacy field
+          preco: i.preco || '',
+          recheios: (i.recheios || []).filter(r => r.trim()),
+          variants: (i.variants || []).map(v => ({ name: v.name||'', price: v.price||'' }))
+        };
+      })
   };
   appData.especial = especial;
   console.log('[Admin] Saving especial. itens:', especial.itens.length);
